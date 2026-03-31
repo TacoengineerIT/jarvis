@@ -1,0 +1,39 @@
+# AI & ML
+anthropic>=0.25.0
+openai-whisper>=20231117
+ollama>=0.1.0
+sentence-transformers>=2.2.0
+
+# Voice
+edge-tts>=6.1.0
+sounddevice>=0.4.6
+scipy>=1.11.0
+
+# Audio playback
+pygame>=2.5.0
+
+# Vector DB & RAG
+chromadb>=0.4.0
+
+# PC Automation
+pyautogui>=0.9.0
+psutil>=5.9.0
+
+# Web
+requests>=2.31.0
+urllib3>=2.0.0
+duckduckgo-search>=3.9.0
+
+# Documents
+PyPDF2>=3.0.0
+
+# Utils
+python-dotenv>=1.0.0
+thefuzz>=0.20.0
+python-Levenshtein>=0.21.0
+
+# Dashboard
+streamlit>=1.30.0
+
+# Numpy (required by whisper + sounddevice)
+numpy>=1.24.0

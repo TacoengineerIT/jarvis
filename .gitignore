@@ -1,0 +1,104 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Databases
+chroma_db/
+*.db
+*.sqlite
+
+# Sensitive data
+.env
+.env.local
+api_key.txt
+apikey.txt
+secrets.json
+
+# Temporary files
+*.tmp
+*.log
+*.temp
+temp/
+tmp/
+
+# Windows
+Thumbs.db
+*.lnk
+.Thumbs.db
+
+# macOS
+.AppleDouble
+.LSOverride
+._*
+
+# User-specific data
+config/finances.json.backup
+config/finances.old
+screenshots/
+*.mp3  # Keep backInBlack.mp3 in repo, but ignore other audio
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Project-specific
+old_versions/
+archive/
+backup/
+tests/temp/
+.cache/
+
+# JARVIS runtime data
+memory.json
+*.mp3
+!backInBlack.mp3
+
+# Whisper model cache (large files)
+~/.cache/whisper/
