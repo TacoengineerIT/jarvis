@@ -1,0 +1,24 @@
+﻿{
+  "apps": {
+    "chrome": {
+      "path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "aliases": ["browser", "web"],
+      "responses": ["Chrome aperto Sir.", "Browser pronto Tony.", "Avvio Chrome."]
+    },
+    "notepad": {
+      "path": "notepad.exe",
+      "aliases": ["note"],
+      "responses": ["Blocco note aperto Sir.", "Notepad pronto Tony."]
+    }
+  },
+  "websites": {
+    "google": {
+      "url": "https://google.com",
+      "aliases": ["search"]
+    },
+    "youtube": {
+      "url": "https://youtube.com",
+      "aliases": ["video"]
+    }
+  }
+}

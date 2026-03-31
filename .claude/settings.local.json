@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m py_compile jarvis_voice_input.py)",
+      "Bash(python -m py_compile survival_recipes.py)",
+      "Bash(python -m py_compile memory_manager.py)",
+      "Bash(python -m py_compile jarvis_brain.py)",
+      "Bash(python -m py_compile jarvis_voice.py)",
+      "Bash(python3 -m py_compile jarvis_voice_input.py)",
+      "Bash(python3 -m py_compile survival_recipes.py)",
+      "Bash(python3 -m py_compile memory_manager.py)",
+      "Bash(python3 -m py_compile jarvis_brain.py)",
+      "Bash(python3 -m py_compile jarvis_voice.py)",
+      "Bash(ls /c/Users/A1600apulia/Desktop/jarvis_scuola/venv/Scripts/python*)",
+      "Bash(/c/Users/A1600apulia/Desktop/jarvis_scuola/venv/Scripts/python.exe -m py_compile jarvis_voice_input.py)",
+      "Bash(/c/Users/A1600apulia/Desktop/jarvis_scuola/venv/Scripts/python.exe -m py_compile survival_recipes.py)",
+      "Bash(/c/Users/A1600apulia/Desktop/jarvis_scuola/venv/Scripts/python.exe -m py_compile memory_manager.py)",
+      "Bash(/c/Users/A1600apulia/Desktop/jarvis_scuola/venv/Scripts/python.exe -m py_compile jarvis_brain.py)",
+      "Bash(/c/Users/A1600apulia/Desktop/jarvis_scuola/venv/Scripts/python.exe -m py_compile jarvis_voice.py)"
+    ]
+  }
+}

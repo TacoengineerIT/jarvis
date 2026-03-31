@@ -1,0 +1,172 @@
+version: '3.9'
+
+services:
+  # ========================================================================
+  # OLLAMA - Local AI Brain
+  # ========================================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: jarvis-ollama
+    
+    # Port exposure
+    ports:
+      - "11434:11434"
+    
+    # Volumes for persistence
+    volumes:
+      - ollama-data:/root/.ollama
+    
+    # Environment
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    
+    # GPU support (optional, uncomment if you have NVIDIA GPU)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # Auto-restart
+    restart: unless-stopped
+    
+    # Pull model on startup (optional)
+    # entrypoint: /bin/bash -c "ollama serve & sleep 10 && ollama pull llama3.1:8b"
+  
+  # ========================================================================
+  # JARVIS Dashboard - Streamlit UI
+  # ========================================================================
+  jarvis-dashboard:
+    build: .
+    container_name: jarvis-dashboard
+    
+    # Port exposure
+    ports:
+      - "8501:8501"
+    
+    # Volumes for persistence
+    volumes:
+      - ./config:/app/config
+      - ./chroma_db:/app/chroma_db
+      - ./docs:/app/docs
+      - ./screenshots:/app/screenshots
+    
+    # Environment
+    environment:
+      - PYTHONUNBUFFERED=1
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      - STREAMLIT_CLIENT_THEME_BASE=light
+    
+    # Depends on Ollama
+    depends_on:
+      ollama:
+        condition: service_healthy
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    # Auto-restart
+    restart: unless-stopped
+  
+  # ========================================================================
+  # JARVIS Agent - Main voice interface (optional, commented)
+  # ========================================================================
+  # jarvis-agent:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: jarvis-agent
+  #   
+  #   stdin_open: true
+  #   tty: true
+  #   
+  #   volumes:
+  #     - ./config:/app/config
+  #     - ./chroma_db:/app/chroma_db
+  #     - ./docs:/app/docs
+  #   
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #   
+  #   depends_on:
+  #     ollama:
+  #       condition: service_healthy
+  #   
+  #   entrypoint: python jarvis_agent_refactored.py
+  
+  # ========================================================================
+  # ALEXA Server - Flask API for Alexa Skill (optional, commented)
+  # ========================================================================
+  # alexa-server:
+  #   build: .
+  #   container_name: jarvis-alexa
+  #   
+  #   ports:
+  #     - "5000:5000"
+  #   
+  #   volumes:
+  #     - ./config:/app/config
+  #     - ./chroma_db:/app/chroma_db
+  #   
+  #   environment:
+  #     - FLASK_APP=alexa_server.py
+  #     - FLASK_ENV=production
+  #   
+  #   depends_on:
+  #     - ollama
+  #   
+  #   entrypoint: flask run --host=0.0.0.0
+
+# ============================================================================
+# VOLUMES
+# ============================================================================
+volumes:
+  ollama-data:
+    driver: local
+
+# ============================================================================
+# NETWORKS (optional, for service discovery)
+# ============================================================================
+networks:
+  default:
+    name: jarvis-network
+    driver: bridge
+
+# ============================================================================
+# USAGE INSTRUCTIONS
+# ============================================================================
+# 
+# Start all services:
+#   docker-compose up -d
+# 
+# View logs:
+#   docker-compose logs -f
+# 
+# Stop all services:
+#   docker-compose down
+# 
+# Pull Ollama model (after ollama container is running):
+#   docker exec jarvis-ollama ollama pull llama3.1:8b
+# 
+# Access dashboard:
+#   http://localhost:8501
+# 
+# Access Ollama:
+#   http://localhost:11434
+#

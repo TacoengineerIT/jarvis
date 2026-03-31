@@ -1,0 +1,33 @@
+﻿{
+  "WORKSPACE": {
+    "intent": "environment_control",
+    "verbs": ["apri", "avvia", "lancia", "chiudi", "termina", "nascondi", "mostra", "affianca"],
+    "targets": ["cursor", "vscode", "chrome", "browser", "terminale", "powershell", "spotify", "discord", "telegram"],
+    "synonyms": {"fai partire": "avvia", "butta giù": "chiudi", "pulisci desktop": "minimizza tutto"}
+  },
+  "FINANCE": {
+    "intent": "money_management",
+    "verbs": ["segna", "aggiungi", "togli", "quanto manca", "check", "stato", "prevedi"],
+    "targets": ["affitto", "spesa", "bolletta", "caffè", "pranzo", "cena", "bus", "stipendio"],
+    "synonyms": {"ho speso": "segna", "ho incassato": "aggiungi", "situazione soldi": "stato"}
+  },
+  "MEDIA": {
+    "intent": "multimedia_control",
+    "verbs": ["metti", "riproduci", "stoppa", "pausa", "avanti", "alza", "abbassa"],
+    "targets": ["musica", "canzone", "artista", "album", "playlist", "spotify"],
+    "genres": ["focus", "lo-fi", "chill"],
+    "synonyms": {"fammi sentire": "riproduci", "zitto": "muta"}
+  },
+  "CODING": {
+    "intent": "devops_workflow",
+    "verbs": ["pusha", "committa", "pull", "clona", "testa", "debugga", "deploy"],
+    "targets": ["github", "repository", "docker", "container", "ngrok"],
+    "synonyms": {"metti su git": "pusha", "guarda i log": "controlla"}
+  },
+  "SYSTEM": {
+    "intent": "hardware_monitoring",
+    "verbs": ["stato", "info", "screenshot", "spegni", "riavvia"],
+    "targets": ["batteria", "ram", "cpu", "disco", "wifi", "schermo"],
+    "synonyms": {"come sta il pc": "stato sistema", "quanta ram": "info ram"}
+  }
+}
