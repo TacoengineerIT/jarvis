@@ -1,8 +1,21 @@
+# ══════════════════════════════════════════════
+# JARVIS Requirements
+# ══════════════════════════════════════════════
+
 # AI & ML
 anthropic>=0.25.0
-openai-whisper>=20231117
+faster-whisper>=1.0.0
 ollama>=0.1.0
 sentence-transformers>=2.2.0
+
+# ── VAD (Voice Activity Detection) ─────────────
+# silero-vad richiede torch. Installa CPU-only per risparmiare spazio:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   pip install torchaudio --index-url https://download.pytorch.org/whl/cpu
+#   pip install silero-vad
+#
+# Se torch non si installa → JARVIS usa energy-based VAD (nessun C++ richiesto).
+silero-vad>=5.0.0
 
 # Voice
 edge-tts>=6.1.0
@@ -32,8 +45,14 @@ python-dotenv>=1.0.0
 thefuzz>=0.20.0
 python-Levenshtein>=0.21.0
 
+# Web server (Alexa integration)
+flask>=3.0.0
+
 # Dashboard
 streamlit>=1.30.0
 
-# Numpy (required by whisper + sounddevice)
+# Wake word detection (optional — falls back to continuous listening)
+openwakeword>=0.6.0
+
+# Numpy (richiesto da faster-whisper + sounddevice + VAD)
 numpy>=1.24.0

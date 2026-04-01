@@ -1,31 +1,16 @@
 """
-JARVIS Voice Input - Whisper transcription WITHOUT FFmpeg dependency.
-Passes numpy array directly to Whisper model (bypasses FFmpeg audio loading).
-Falls back gracefully if mic/whisper unavailable.
+JARVIS Voice Input — CLI-mode STT via faster-whisper.
+Records from mic and transcribes using jarvis_stt module.
+Falls back gracefully if mic/STT unavailable.
 """
 
 import numpy as np
-from pathlib import Path
-
-# Lazy-load Whisper to avoid crash at import if not installed
-_MODEL = None
-
-def _get_model():
-    global _MODEL
-    if _MODEL is None:
-        try:
-            import whisper
-            _MODEL = whisper.load_model("base", device="cpu")
-        except Exception as e:
-            print(f"[Whisper] Impossibile caricare modello: {e}")
-            _MODEL = None
-    return _MODEL
+from jarvis_stt import transcribe_audio, preload as preload_stt
 
 
 def listen_and_transcribe(duration_seconds: int = 5) -> str:
     """
     Registra audio dal microfono e restituisce il testo trascritto.
-    Non richiede FFmpeg: passa numpy array direttamente a Whisper.
 
     Returns:
         Stringa con testo trascritto, o stringa vuota se fallisce.
@@ -48,25 +33,17 @@ def listen_and_transcribe(duration_seconds: int = 5) -> str:
         print("[Mic] Dispositivo audio non disponibile. Usa input testo.")
         return ""
 
-    # 2. Carica modello Whisper
-    model = _get_model()
-    if model is None:
-        print("[Whisper] Modello non disponibile. Installare: pip install openai-whisper")
-        return ""
-
-    # 3. Converti int16 → float32 normalizzato [-1.0, 1.0]
-    # Questo bypassa completamente FFmpeg: nessun file intermedio!
+    # 2. Trascrivi con faster-whisper
     try:
-        audio_float32 = audio_int16.flatten().astype(np.float32) / 32768.0
-        result = model.transcribe(audio_float32, language="it", fp16=False)
-        text = result["text"].strip()
+        audio_flat = audio_int16.flatten()
+        text = transcribe_audio(audio_flat)
         if text:
-            print(f"[Whisper] Riconosciuto: {text}")
+            print(f"[STT] Riconosciuto: {text}")
         else:
-            print("[Whisper] Nessun parlato rilevato.")
+            print("[STT] Nessun parlato rilevato.")
         return text
     except Exception as e:
-        print(f"[Whisper] Errore trascrizione: {e}")
+        print(f"[STT] Errore trascrizione: {e}")
         return ""
 
 

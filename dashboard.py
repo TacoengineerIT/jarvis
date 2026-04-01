@@ -11,7 +11,7 @@ import psutil
 from jarvis_config import config
 from finance_engine import check_gap, load_finances, update_finances
 from jarvis_control import get_system_info, get_app_list, get_website_list
-from jarvis_brain import is_ollama_available
+from jarvis_brain import is_ollama_available, LOCAL_MODEL
 
 # ============================================================================
 # PAGE CONFIG
@@ -80,11 +80,12 @@ st.sidebar.markdown("**Status:** Operational")
 
 def get_system_status():
     """Ritorna status completo del sistema."""
+    chroma_path = config.get("paths.chroma_db", "chroma_db")
     return {
         "ollama": is_ollama_available(),
         "python": True,
-        "config": Path(config.config_dir).exists(),
-        "rag": Path(config.get("paths.chroma_db")).exists()
+        "config": config.config_dir.exists(),
+        "rag": Path(chroma_path).exists()
     }
 
 def format_currency(value):
@@ -152,8 +153,8 @@ if page == "🏠 Dashboard":
     with col2:
         st.subheader("🎙️ Voice Status")
         st.write(f"**Voice:** {config.get_voice()}")
-        st.write(f"**TTS Engine:** Edge TTS")
-        st.write(f"**Language:** Italian (it-IT)")
+        st.write("**TTS Engine:** Edge TTS")
+        st.write("**Language:** Italian (it-IT)")
     
     st.divider()
     
@@ -253,8 +254,8 @@ elif page == "🧠 AI Status":
         
         st.markdown(f"**Status:** {status_text}", unsafe_allow_html=True)
         st.write(f"**Model:** {config.get_local_model()}")
-        st.write(f"**URL:** {config.get('ai.local_url')}")
-        st.write(f"**Timeout:** {config.get('ai.local_timeout')}s")
+        st.write(f"**URL:** {config.get('ai.local_url', 'http://localhost:11434')}")
+        st.write(f"**Timeout:** {config.get('ai.local_timeout', 30)}s")
         
         if ollama_status:
             st.success("✓ Local inference ready")
@@ -265,6 +266,7 @@ elif page == "🧠 AI Status":
         st.subheader("☁️ Cloud AI (Claude)")
         
         st.write(f"**Model:** {config.get_cloud_model()}")
+
         st.write(f"**Provider:** Anthropic API")
         st.write(f"**Status:** 🟢 Ready (with API key)")
         st.info("ℹ Cloud AI used as fallback for complex reasoning")
@@ -317,7 +319,7 @@ elif page == "🖥️ System":
     config_status = {
         "Config Manager": config is not None,
         "Config File": (config.config_dir / "jarvis_config.json").exists(),
-        "ChromaDB": Path(config.get("paths.chroma_db")).exists(),
+        "ChromaDB": Path(config.get("paths.chroma_db", "chroma_db")).exists(),
         "Finances": (config.config_dir / "finances.json").exists()
     }
     

@@ -100,5 +100,9 @@ memory.json
 *.mp3
 !backInBlack.mp3
 
-# Whisper model cache (large files)
+# Home Assistant config (contains token)
+config/home_assistant.json
+
+# Whisper/CTranslate2 model cache (large files)
 ~/.cache/whisper/
+~/.cache/huggingface/
