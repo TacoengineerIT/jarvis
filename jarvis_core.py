@@ -43,6 +43,7 @@ SONNET_INTENTS = {
     "complex_reasoning", "storytelling",
     "news_briefing", "market_analysis", "geopolitical_analysis",
     "schedule_query", "break_recommendation", "calendar_check",
+    "memory_recall",
 }
 
 # Keyword → intent mapping (Italian + English)
@@ -63,6 +64,8 @@ INTENT_PATTERNS: list[tuple[list[str], str]] = [
     (["notizie", "news", "briefing", "mattutino"], "news_briefing"),
     (["mercati", "borsa", "azioni", "investiment", "market"], "market_analysis"),
     (["geopolitic", "tensione mondiale", "conflitto", "guerra"], "geopolitical_analysis"),
+    (["ricordi quando", "hai detto che", "l'altra volta", "tempo fa",
+      "remember when", "past advice", "consigliato di"],      "memory_recall"),
     (["musica", "playlist", "canzone", "play"],   "play_music"),
     (["stop musica", "pausa", "ferma"],           "stop_music"),
     (["volume su", "alza volume"],                "volume_up"),
@@ -209,12 +212,19 @@ class JarvisCore:
                       "mood_check", "planning"):
             schedule_ctx = self._get_schedule_context(mood)
 
+        # Semantic memory context (injected for mood/advice/recall intents)
+        semantic_ctx = ""
+        if intent in ("mood_check", "life_advice", "empathy", "memory_recall",
+                      "break_recommendation", "planning"):
+            semantic_ctx = self._get_enhanced_memory_context(user_input, mood)
+
         system = (
             f"{JARVIS_PERSONA}\n\n"
             f"=== MEMORIA RECENTE ===\n{memory_ctx}\n\n"
             f"=== STATO ATTUALE ===\n"
             f"Umore ora: {mood['label']} {mood['emoji']} (score={mood['score']})\n"
             f"{mood_summary}"
+            + (f"\n\n=== CONTESTO SEMANTICO (pattern + situazioni simili) ===\n{semantic_ctx}" if semantic_ctx else "")
             + (f"\n\n=== SCHEDULE OGGI ===\n{schedule_ctx}" if schedule_ctx else "")
             + (f"\n\n=== BRIEFING GEOPOLITICO/MERCATI (oggi) ===\n{briefing_ctx}" if briefing_ctx else "")
         )
@@ -264,6 +274,48 @@ class JarvisCore:
             return "\n".join(lines)
         except Exception as e:
             logger.debug("Schedule context unavailable: %s", e)
+            return ""
+
+    def _get_enhanced_memory_context(self, user_input: str, mood: dict) -> str:
+        """Build semantic memory context: mood trend + similar past situations + patterns."""
+        try:
+            from jarvis_memory_semantic import SemanticMemoryManager
+            from jarvis_memory_patterns import PatternDetector
+            sem = SemanticMemoryManager(memory=self.memory)
+            pat = PatternDetector(memory=self.memory)
+
+            parts = []
+
+            # Mood trend
+            trend = sem.get_mood_trend(days=7)
+            parts.append(f"Trend umore 7gg: {trend['description']}")
+
+            # Pattern-based action recommendation
+            rec = pat.recommend_action_for_mood(mood["label"])
+            if rec:
+                parts.append(f"Pattern consiglio: {rec}")
+
+            # Similar past conversations
+            similar = sem.semantic_search(user_input, top_k=3)
+            if similar:
+                parts.append("Situazioni simili passate:")
+                for s in similar:
+                    ts = s["timestamp"][:10] if s.get("timestamp") else "?"
+                    parts.append(
+                        f"  [{ts}] sim={s['similarity']:.2f} mood={s['mood']}: "
+                        f"\"{s['user_input'][:50]}...\""
+                    )
+
+            # What helped last time with same mood
+            similar_moods = sem.find_similar_moods(mood["label"], lookback_days=7)
+            if similar_moods:
+                parts.append(f"Quando eri '{mood['label']}' di recente, JARVIS disse:")
+                for sm in similar_moods[:2]:
+                    parts.append(f"  \"{sm['jarvis_response'][:80]}\"")
+
+            return "\n".join(parts)
+        except Exception as e:
+            logger.debug("Enhanced memory context unavailable: %s", e)
             return ""
 
     def _get_briefing_context(self) -> str:

@@ -39,6 +39,8 @@ streamlit>=1.30.0
 
 # ── RAG / Embeddings ─────────────────────────
 chromadb>=0.4.22
+sentence-transformers>=2.7.0   # semantic search (optional, falls back to keyword vectors)
+scikit-learn>=1.4.0            # TF-IDF + cosine similarity utilities
 
 # ── Utils ─────────────────────────────────────
 python-dotenv>=1.0.1

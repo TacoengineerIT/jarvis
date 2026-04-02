@@ -214,6 +214,37 @@ class JarvisMemory:
                     notified      BOOLEAN DEFAULT 0,
                     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
                 );
+
+                CREATE TABLE IF NOT EXISTS conversation_embeddings (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    conversation_id INTEGER UNIQUE,
+                    embedding       BLOB,
+                    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE IF NOT EXISTS mood_timeline (
+                    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp   DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    mood_label  TEXT,
+                    mood_score  REAL,
+                    keywords    TEXT
+                );
+
+                CREATE TABLE IF NOT EXISTS detected_patterns (
+                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    pattern_type TEXT,
+                    description  TEXT,
+                    confidence   REAL,
+                    data         TEXT,
+                    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE IF NOT EXISTS memory_annotations (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    conversation_id INTEGER,
+                    annotation      TEXT,
+                    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
             """)
 
     def _conn(self) -> sqlite3.Connection:
@@ -541,6 +572,122 @@ class JarvisMemory:
                 "UPDATE event_reminders SET notified = 1 WHERE id = ?",
                 (reminder_id,),
             )
+
+    # ------------------------------------------------------------------ #
+    # Phase 1 — Semantic Embeddings                                        #
+    # ------------------------------------------------------------------ #
+
+    def save_embedding(self, conversation_id: int, embedding_bytes: bytes):
+        """Upsert embedding blob for a conversation."""
+        with self._conn() as conn:
+            conn.execute(
+                """INSERT OR REPLACE INTO conversation_embeddings
+                   (conversation_id, embedding) VALUES (?, ?)""",
+                (conversation_id, embedding_bytes),
+            )
+
+    def get_embeddings(self) -> list[dict]:
+        """Return all stored embeddings."""
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT conversation_id, embedding FROM conversation_embeddings"
+            ).fetchall()
+        return [{"conversation_id": r["conversation_id"], "embedding": r["embedding"]} for r in rows]
+
+    def get_conversation_by_id(self, conversation_id: int) -> Optional[dict]:
+        """Fetch a single conversation row by id, with decryption."""
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT * FROM conversations WHERE id = ?", (conversation_id,)
+            ).fetchone()
+        if not row:
+            return None
+        return {
+            "id":              row["id"],
+            "timestamp":       row["timestamp"],
+            "user_input":      self._decrypt(row["user_input"]),
+            "jarvis_response": self._decrypt(row["jarvis_response"]),
+            "mood_detected":   row["mood_detected"],
+            "intent":          row["intent"],
+            "context":         json.loads(row["context"] or "{}"),
+        }
+
+    # ------------------------------------------------------------------ #
+    # Phase 1 — Mood Timeline                                              #
+    # ------------------------------------------------------------------ #
+
+    def save_mood_timeline(
+        self,
+        mood_label: str,
+        mood_score: float,
+        keywords: Optional[list] = None,
+    ):
+        """Append a mood snapshot to the timeline."""
+        with self._conn() as conn:
+            conn.execute(
+                """INSERT INTO mood_timeline (mood_label, mood_score, keywords)
+                   VALUES (?, ?, ?)""",
+                (mood_label, mood_score, json.dumps(keywords or [])),
+            )
+
+    def get_mood_timeline(self, days: int = 7) -> list[dict]:
+        """Return mood snapshots from the last N days, oldest first."""
+        from datetime import timedelta
+        since = (datetime.now() - timedelta(days=days)).isoformat()
+        with self._conn() as conn:
+            rows = conn.execute(
+                """SELECT * FROM mood_timeline
+                   WHERE timestamp >= ? ORDER BY timestamp ASC""",
+                (since,),
+            ).fetchall()
+        return [
+            {
+                "id":         r["id"],
+                "timestamp":  r["timestamp"],
+                "mood_label": r["mood_label"],
+                "mood_score": r["mood_score"],
+                "keywords":   json.loads(r["keywords"] or "[]"),
+            }
+            for r in rows
+        ]
+
+    # ------------------------------------------------------------------ #
+    # Phase 1 — Detected Patterns                                          #
+    # ------------------------------------------------------------------ #
+
+    def save_pattern(self, pattern_type: str, description: str, confidence: float, data: Optional[dict] = None):
+        """Insert or update a detected behavioural pattern."""
+        with self._conn() as conn:
+            conn.execute(
+                """INSERT INTO detected_patterns
+                   (pattern_type, description, confidence, data)
+                   VALUES (?, ?, ?, ?)""",
+                (pattern_type, description, confidence, json.dumps(data or {})),
+            )
+
+    def get_patterns(self, pattern_type: Optional[str] = None) -> list[dict]:
+        """Return detected patterns, optionally filtered by type."""
+        with self._conn() as conn:
+            if pattern_type:
+                rows = conn.execute(
+                    "SELECT * FROM detected_patterns WHERE pattern_type = ? ORDER BY created_at DESC",
+                    (pattern_type,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM detected_patterns ORDER BY created_at DESC"
+                ).fetchall()
+        return [
+            {
+                "id":           r["id"],
+                "pattern_type": r["pattern_type"],
+                "description":  r["description"],
+                "confidence":   r["confidence"],
+                "data":         json.loads(r["data"] or "{}"),
+                "created_at":   r["created_at"],
+            }
+            for r in rows
+        ]
 
     # ------------------------------------------------------------------ #
     # Stats                                                                #
