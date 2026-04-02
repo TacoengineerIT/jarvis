@@ -1,58 +1,54 @@
 # ══════════════════════════════════════════════
-# JARVIS Requirements
+# JARVIS v4.0 Requirements
+# Install: pip install -r requirements.txt
 # ══════════════════════════════════════════════
 
-# AI & ML
-anthropic>=0.25.0
-faster-whisper>=1.0.0
-ollama>=0.1.0
-sentence-transformers>=2.2.0
+# ── Claude API (Core) ──────────────────────────
+anthropic>=0.28.0
 
-# ── VAD (Voice Activity Detection) ─────────────
-# silero-vad richiede torch. Installa CPU-only per risparmiare spazio:
-#   pip install torch --index-url https://download.pytorch.org/whl/cpu
-#   pip install torchaudio --index-url https://download.pytorch.org/whl/cpu
-#   pip install silero-vad
-#
-# Se torch non si installa → JARVIS usa energy-based VAD (nessun C++ richiesto).
-silero-vad>=5.0.0
-
-# Voice
-edge-tts>=6.1.0
+# ── Voice I/O ─────────────────────────────────
+edge-tts>=6.1.12
+pygame>=2.6.1
+SpeechRecognition>=3.10.0
 sounddevice>=0.4.6
+webrtcvad>=2.0.10          # VAD (silence detection)
+pyaudio>=0.2.14            # optional fallback for SpeechRecognition
+
+# ── Audio processing ──────────────────────────
+numpy>=1.24.0
 scipy>=1.11.0
 
-# Audio playback
-pygame>=2.5.0
+# ── Memory & Encryption ───────────────────────
+cryptography>=42.0.0       # Fernet field encryption for memory.db
 
-# Vector DB & RAG
-chromadb>=0.4.0
+# ── Smart Home ────────────────────────────────
+tinytuya>=1.12.8           # Tuya smart plugs/lights
 
-# PC Automation
-pyautogui>=0.9.0
-psutil>=5.9.0
+# ── Async HTTP ────────────────────────────────
+aiohttp>=3.9.0
 
-# Web
-requests>=2.31.0
-urllib3>=2.0.0
-duckduckgo-search>=3.9.0
-
-# Documents
-PyPDF2>=3.0.0
-
-# Utils
-python-dotenv>=1.0.0
-thefuzz>=0.20.0
-python-Levenshtein>=0.21.0
-
-# Web server (Alexa integration)
+# ── Web server (Alexa bridge, optional) ───────
 flask>=3.0.0
 
-# Dashboard
+# ── PC Automation ─────────────────────────────
+psutil>=5.9.0
+pyautogui>=0.9.54
+
+# ── Dashboard ─────────────────────────────────
 streamlit>=1.30.0
 
-# Wake word detection (optional — falls back to continuous listening)
+# ── RAG / Embeddings ─────────────────────────
+chromadb>=0.4.22
+
+# ── Utils ─────────────────────────────────────
+python-dotenv>=1.0.1
+
+# ── Wake word (optional) ──────────────────────
 openwakeword>=0.6.0
 
-# Numpy (richiesto da faster-whisper + sounddevice + VAD)
-numpy>=1.24.0
+# ── v3 compatibility ─────────────────────────
+faster-whisper>=1.0.0
+thefuzz>=0.20.0
+python-Levenshtein>=0.21.0
+requests>=2.31.0
+feedparser>=6.0.11           # RSS parsing for news scraper
