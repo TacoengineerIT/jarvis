@@ -245,6 +245,50 @@ class JarvisMemory:
                     annotation      TEXT,
                     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
                 );
+
+                CREATE TABLE IF NOT EXISTS financial_transactions (
+                    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                    date        DATE,
+                    amount      REAL,
+                    currency    TEXT DEFAULT 'EUR',
+                    category    TEXT,
+                    description TEXT,
+                    merchant    TEXT,
+                    tags        TEXT,
+                    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE IF NOT EXISTS budget_limits (
+                    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                    month               TEXT,
+                    category            TEXT,
+                    limit_amount        REAL,
+                    spent_amount        REAL DEFAULT 0,
+                    warning_percentage  INTEGER DEFAULT 70,
+                    updated_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(month, category)
+                );
+
+                CREATE TABLE IF NOT EXISTS financial_summary (
+                    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                    month            TEXT UNIQUE,
+                    total_spent      REAL DEFAULT 0,
+                    by_category      TEXT,
+                    remaining_budget REAL,
+                    burn_rate        REAL,
+                    days_until_empty INTEGER,
+                    updated_at       DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE IF NOT EXISTS financial_goals (
+                    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                    goal_type      TEXT,
+                    target_amount  REAL,
+                    current_amount REAL DEFAULT 0,
+                    deadline       DATE,
+                    priority       INTEGER DEFAULT 3,
+                    created_at     DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
             """)
 
     def _conn(self) -> sqlite3.Connection:
@@ -688,6 +732,191 @@ class JarvisMemory:
             }
             for r in rows
         ]
+
+    # ------------------------------------------------------------------ #
+    # Phase 2 — Financial Transactions                                     #
+    # ------------------------------------------------------------------ #
+
+    def save_transaction(
+        self,
+        amount: float,
+        category: str,
+        description: str = "",
+        merchant: str = "",
+        currency: str = "EUR",
+        date: Optional[str] = None,
+        tags: Optional[list] = None,
+    ) -> int:
+        """Insert a financial transaction. Returns the new row id."""
+        txn_date = date or datetime.now().strftime("%Y-%m-%d")
+        with self._conn() as conn:
+            cur = conn.execute(
+                """INSERT INTO financial_transactions
+                   (date, amount, currency, category, description, merchant, tags)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (txn_date, amount, currency, category,
+                 description, merchant, json.dumps(tags or [])),
+            )
+            return cur.lastrowid
+
+    def get_transactions(
+        self,
+        start_date: str,
+        end_date: str,
+        category: Optional[str] = None,
+    ) -> list[dict]:
+        """Return transactions in [start_date, end_date], optionally filtered by category."""
+        with self._conn() as conn:
+            if category:
+                rows = conn.execute(
+                    """SELECT * FROM financial_transactions
+                       WHERE date >= ? AND date <= ? AND category = ?
+                       ORDER BY date ASC, created_at ASC""",
+                    (start_date, end_date, category),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """SELECT * FROM financial_transactions
+                       WHERE date >= ? AND date <= ?
+                       ORDER BY date ASC, created_at ASC""",
+                    (start_date, end_date),
+                ).fetchall()
+        return [
+            {
+                "id": r["id"], "date": r["date"], "amount": r["amount"],
+                "currency": r["currency"], "category": r["category"],
+                "description": r["description"], "merchant": r["merchant"],
+                "tags": json.loads(r["tags"] or "[]"),
+            }
+            for r in rows
+        ]
+
+    def get_transactions_for_month(self, month_str: str) -> list[dict]:
+        """month_str: 'YYYY-MM'. Returns all transactions in that month."""
+        start = f"{month_str}-01"
+        # Compute last day of month
+        year, month = int(month_str[:4]), int(month_str[5:7])
+        if month == 12:
+            next_month = f"{year + 1}-01-01"
+        else:
+            next_month = f"{year}-{month + 1:02d}-01"
+        import datetime as _dt
+        end = (_dt.date.fromisoformat(next_month) - _dt.timedelta(days=1)).isoformat()
+        return self.get_transactions(start, end)
+
+    # ------------------------------------------------------------------ #
+    # Phase 2 — Budget Limits                                              #
+    # ------------------------------------------------------------------ #
+
+    def set_budget_limit(
+        self,
+        month: str,
+        category: str,
+        limit_amount: float,
+        warning_percentage: int = 70,
+    ):
+        """Upsert budget limit for a category/month."""
+        with self._conn() as conn:
+            conn.execute(
+                """INSERT INTO budget_limits (month, category, limit_amount, warning_percentage)
+                   VALUES (?, ?, ?, ?)
+                   ON CONFLICT(month, category) DO UPDATE SET
+                     limit_amount = excluded.limit_amount,
+                     warning_percentage = excluded.warning_percentage,
+                     updated_at = CURRENT_TIMESTAMP""",
+                (month, category, limit_amount, warning_percentage),
+            )
+
+    def update_budget_spent(self, month: str, category: str, spent_amount: float):
+        """Update the spent_amount for a budget limit row."""
+        with self._conn() as conn:
+            conn.execute(
+                """UPDATE budget_limits SET spent_amount = ?, updated_at = CURRENT_TIMESTAMP
+                   WHERE month = ? AND category = ?""",
+                (spent_amount, month, category),
+            )
+
+    def get_budget_limits(self, month: str) -> list[dict]:
+        """Return all budget limits for a given month."""
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT * FROM budget_limits WHERE month = ?", (month,)
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    # ------------------------------------------------------------------ #
+    # Phase 2 — Financial Summary                                          #
+    # ------------------------------------------------------------------ #
+
+    def save_financial_summary(self, month: str, data: dict):
+        """Upsert monthly financial summary."""
+        with self._conn() as conn:
+            conn.execute(
+                """INSERT OR REPLACE INTO financial_summary
+                   (month, total_spent, by_category, remaining_budget, burn_rate, days_until_empty)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    month,
+                    data.get("total_spent", 0),
+                    json.dumps(data.get("by_category", {})),
+                    data.get("remaining_budget"),
+                    data.get("burn_rate"),
+                    data.get("days_until_empty"),
+                ),
+            )
+
+    def get_financial_summary(self, month: str) -> Optional[dict]:
+        """Return cached financial summary for a month, or None."""
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT * FROM financial_summary WHERE month = ?", (month,)
+            ).fetchone()
+        if not row:
+            return None
+        return {
+            "month":            row["month"],
+            "total_spent":      row["total_spent"],
+            "by_category":      json.loads(row["by_category"] or "{}"),
+            "remaining_budget": row["remaining_budget"],
+            "burn_rate":        row["burn_rate"],
+            "days_until_empty": row["days_until_empty"],
+            "updated_at":       row["updated_at"],
+        }
+
+    # ------------------------------------------------------------------ #
+    # Phase 2 — Financial Goals                                            #
+    # ------------------------------------------------------------------ #
+
+    def save_financial_goal(
+        self,
+        goal_type: str,
+        target_amount: float,
+        deadline: Optional[str] = None,
+        priority: int = 3,
+        current_amount: float = 0.0,
+    ) -> int:
+        with self._conn() as conn:
+            cur = conn.execute(
+                """INSERT INTO financial_goals
+                   (goal_type, target_amount, current_amount, deadline, priority)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (goal_type, target_amount, current_amount, deadline, priority),
+            )
+            return cur.lastrowid
+
+    def get_financial_goals(self) -> list[dict]:
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT * FROM financial_goals ORDER BY priority DESC, created_at ASC"
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def update_goal_amount(self, goal_id: int, current_amount: float):
+        with self._conn() as conn:
+            conn.execute(
+                "UPDATE financial_goals SET current_amount = ? WHERE id = ?",
+                (current_amount, goal_id),
+            )
 
     # ------------------------------------------------------------------ #
     # Stats                                                                #

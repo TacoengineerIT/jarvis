@@ -35,6 +35,7 @@ HAIKU_INTENTS = {
     "open_app", "close_app", "volume_up", "volume_down",
     "what_time", "what_date", "play_music", "stop_music",
     "quick_fact", "translate",
+    "log_expense",
 }
 
 SONNET_INTENTS = {
@@ -44,6 +45,7 @@ SONNET_INTENTS = {
     "news_briefing", "market_analysis", "geopolitical_analysis",
     "schedule_query", "break_recommendation", "calendar_check",
     "memory_recall",
+    "check_budget", "spending_summary", "burn_rate",
 }
 
 # Keyword → intent mapping (Italian + English)
@@ -66,6 +68,13 @@ INTENT_PATTERNS: list[tuple[list[str], str]] = [
     (["geopolitic", "tensione mondiale", "conflitto", "guerra"], "geopolitical_analysis"),
     (["ricordi quando", "hai detto che", "l'altra volta", "tempo fa",
       "remember when", "past advice", "consigliato di"],      "memory_recall"),
+    (["ho speso", "ho comprato", "ho pagato", "comprato", "€", "euro",
+      "spesa di", "costa"],                                   "log_expense"),
+    (["quanto ho speso", "budget", "quanti soldi ho speso"],  "check_budget"),
+    (["resoconto", "statistiche spese", "riepilogo spese",
+      "spending summary", "spese del mese"],                  "spending_summary"),
+    (["fino a quando", "soldi durano", "burn rate",
+      "quando finiscono", "quanti giorni"],                   "burn_rate"),
     (["musica", "playlist", "canzone", "play"],   "play_music"),
     (["stop musica", "pausa", "ferma"],           "stop_music"),
     (["volume su", "alza volume"],                "volume_up"),
@@ -133,6 +142,14 @@ class JarvisCore:
             if cached:
                 self._save_to_memory(user_input, cached, mood, intent)
                 return {"response": cached, "intent": intent, "mood": mood, "model": "cache", "cached": True}
+
+        # Handle expense logging directly (fast path, no LLM needed)
+        if intent == "log_expense":
+            direct = self._handle_log_expense(user_input)
+            if direct:
+                self._save_to_memory(user_input, direct, mood, intent)
+                return {"response": direct, "intent": intent, "mood": mood,
+                        "model": "local", "cached": False}
 
         # Route to model
         if intent in HAIKU_INTENTS:
@@ -218,6 +235,12 @@ class JarvisCore:
                       "break_recommendation", "planning"):
             semantic_ctx = self._get_enhanced_memory_context(user_input, mood)
 
+        # Financial context (injected for budget/spending intents)
+        finance_ctx = ""
+        if intent in ("check_budget", "spending_summary", "burn_rate",
+                      "financial_advice", "planning"):
+            finance_ctx = self._get_financial_context()
+
         system = (
             f"{JARVIS_PERSONA}\n\n"
             f"=== MEMORIA RECENTE ===\n{memory_ctx}\n\n"
@@ -226,6 +249,7 @@ class JarvisCore:
             f"{mood_summary}"
             + (f"\n\n=== CONTESTO SEMANTICO (pattern + situazioni simili) ===\n{semantic_ctx}" if semantic_ctx else "")
             + (f"\n\n=== SCHEDULE OGGI ===\n{schedule_ctx}" if schedule_ctx else "")
+            + (f"\n\n=== BUDGET E SPESE ===\n{finance_ctx}" if finance_ctx else "")
             + (f"\n\n=== BRIEFING GEOPOLITICO/MERCATI (oggi) ===\n{briefing_ctx}" if briefing_ctx else "")
         )
         try:
@@ -274,6 +298,54 @@ class JarvisCore:
             return "\n".join(lines)
         except Exception as e:
             logger.debug("Schedule context unavailable: %s", e)
+            return ""
+
+    def _handle_log_expense(self, user_input: str) -> Optional[str]:
+        """Parse expense from text, log it, return confirmation string (or None on parse failure)."""
+        try:
+            from jarvis_finance import FinanceManager
+            finance = FinanceManager(memory=self.memory)
+            result = finance.parse_and_log(user_input)
+            if not result:
+                return None
+            status = result["budget_status"].get(result["category"], {})
+            pct = status.get("pct", 0)
+            spent = status.get("spent", 0)
+            limit = status.get("limit", 0)
+            over_warn = " ⚠" if status.get("over") else (" ⚠ 90%" if pct >= 90 else "")
+            return (
+                f"Registrato €{result['amount']:.2f} ({result['category']}"
+                + (f" — {result['merchant']}" if result.get("merchant") else "")
+                + f"). Budget {result['category']}: €{spent:.0f}/€{limit:.0f} ({pct:.0f}%){over_warn}."
+            )
+        except Exception as e:
+            logger.debug("log_expense fast path failed: %s", e)
+            return None
+
+    def _get_financial_context(self) -> str:
+        """Return compact financial summary for Sonnet context."""
+        try:
+            from jarvis_finance import FinanceManager
+            from jarvis_finance_predictor import BurnRatePredictor
+            finance = FinanceManager(memory=self.memory)
+            summary = finance.get_monthly_summary()
+            alerts = finance.check_budget_alerts()
+            burn = BurnRatePredictor(finance).predict_burn_rate()
+
+            lines = [
+                f"Spese {summary['month']}: €{summary['total_spent']:.0f}/€{summary['budget_limit']:.0f} "
+                f"({summary['percentage_used']:.0f}%) — rimangono €{summary['remaining']:.0f}",
+                f"Burn rate: €{burn['daily_average']:.1f}/giorno | proiezione: €{burn['projected_monthly']:.0f}",
+            ]
+            by_cat = summary.get("by_category", {})
+            if by_cat:
+                cats = ", ".join(f"{k} €{v:.0f}" for k, v in sorted(by_cat.items(), key=lambda x: -x[1])[:4])
+                lines.append(f"Per categoria: {cats}")
+            for a in alerts[:2]:
+                lines.append(f"⚠ {a['message']}")
+            return "\n".join(lines)
+        except Exception as e:
+            logger.debug("Financial context unavailable: %s", e)
             return ""
 
     def _get_enhanced_memory_context(self, user_input: str, mood: dict) -> str:
