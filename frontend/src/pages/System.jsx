@@ -1,30 +1,30 @@
 /**
- * System.jsx — DevOps / Monitoring page (J.A.R.V.I.S. V5.5 System DevOps design)
- * Shows: Docker Sentry grid, SSH status, real-time log stream, right-side quick actions.
+ * System.jsx — V5.5 System DevOps
+ * Docker Sentry grid, SSH status, API cost, real-time log stream, right command strip.
  */
 import { useState, useEffect, useRef } from 'react'
 import { useJARVIS } from '../hooks/useJARVIS.js'
 
 const INITIAL_LOGS = [
-  { ts: '14:22:01.032', tag: 'SYSTEM',  tagCls: 'text-tertiary',    msg: 'Kernel synchronization complete. Ready for I/O requests.' },
-  { ts: '14:22:01.045', tag: 'DOCKER',  tagCls: 'text-secondary',   msg: 'Container "sentry-redis-master" health check passed.' },
-  { ts: '14:22:02.112', tag: 'WARN',    tagCls: 'text-error',        msg: 'Detected high-entropy traffic on port 443 (PC-Scuola).', errCls: 'text-error-dim' },
-  { ts: '14:22:02.150', tag: 'SYSTEM',  tagCls: 'text-tertiary',    msg: 'Deploying mitigation protocol "JARVIS_SHIELD_V4"...' },
-  { ts: '14:22:03.001', tag: 'SSH',     tagCls: 'text-secondary',   msg: 'Handshake completed. Session ID: _scu001_' },
+  { ts: '14:22:01.032', tag: 'SYSTEM',  tagCls: 'text-tertiary',              msg: 'Kernel synchronization complete. Ready for I/O requests.' },
+  { ts: '14:22:01.045', tag: 'DOCKER',  tagCls: 'text-secondary',             msg: 'Container "sentry-redis-master" health check passed.' },
+  { ts: '14:22:02.112', tag: 'WARN',    tagCls: 'text-error',                 msg: 'Detected high-entropy traffic on port 443 (PC-Scuola).', errCls: 'text-error-dim' },
+  { ts: '14:22:02.150', tag: 'SYSTEM',  tagCls: 'text-tertiary',              msg: 'Deploying mitigation protocol "JARVIS_SHIELD_V4"...' },
+  { ts: '14:22:03.001', tag: 'SSH',     tagCls: 'text-secondary',             msg: 'Handshake completed. Session ID: _scu001_' },
   { ts: '14:22:03.455', tag: 'INFO',    tagCls: 'text-on-surface-variant/40', msg: '# Routine health sweep initiated. Estimated time: 12ms', italic: true },
-  { ts: '14:22:04.220', tag: 'SYSTEM',  tagCls: 'text-tertiary',    msg: 'Sub-processor orbital status at 12%. Heat sink optimal.' },
-  { ts: '14:22:05.101', tag: 'DOCKER',  tagCls: 'text-secondary',   msg: 'Image "scuola-node-exporter" updated to latest digest.' },
+  { ts: '14:22:04.220', tag: 'SYSTEM',  tagCls: 'text-tertiary',              msg: 'Sub-processor orbital status at 12%. Heat sink optimal.' },
+  { ts: '14:22:05.101', tag: 'DOCKER',  tagCls: 'text-secondary',             msg: 'Image "scuola-node-exporter" updated to latest digest.' },
 ]
 
 const CONTAINERS = [
-  { id: 'SRV-01',  status: 'up'  },
-  { id: 'DB-MGR',  status: 'up'  },
-  { id: 'CACHE',   status: 'up'  },
-  { id: 'AUTH',    status: 'up'  },
-  { id: 'NODE-A',  status: 'idle'},
-  { id: 'LOG-X',   status: 'up'  },
-  { id: 'QUEUE',   status: 'up'  },
-  { id: 'ERR-4',   status: 'err' },
+  { id: 'SRV-01',  status: 'up'   },
+  { id: 'DB-MGR',  status: 'up'   },
+  { id: 'CACHE',   status: 'up'   },
+  { id: 'AUTH',    status: 'up'   },
+  { id: 'NODE-A',  status: 'idle' },
+  { id: 'LOG-X',   status: 'up'   },
+  { id: 'QUEUE',   status: 'up'   },
+  { id: 'ERR-4',   status: 'err'  },
 ]
 
 function StatusLed({ id, status }) {
@@ -44,25 +44,28 @@ function StatusLed({ id, status }) {
   )
 }
 
+function makeTs() {
+  const now = new Date()
+  return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}.${String(now.getMilliseconds()).padStart(3,'0')}`
+}
+
 export default function System() {
   const { state, connected, loading, sendInput } = useJARVIS()
-  const [logs, setLogs]         = useState(INITIAL_LOGS)
-  const [cmdVal, setCmdVal]     = useState('')
-  const [paused, setPaused]     = useState(false)
-  const logEndRef               = useRef(null)
+  const [logs, setLogs]     = useState(INITIAL_LOGS)
+  const [cmdVal, setCmdVal] = useState('')
+  const [paused, setPaused] = useState(false)
+  const logEndRef           = useRef(null)
 
   const upCount = CONTAINERS.filter(c => c.status === 'up').length
 
   // Append JARVIS response to log stream
   useEffect(() => {
     if (!state.response || paused) return
-    const now = new Date()
-    const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}.${String(now.getMilliseconds()).padStart(3,'0')}`
     setLogs(prev => [...prev.slice(-50), {
-      ts,
+      ts:     makeTs(),
       tag:    'JARVIS',
       tagCls: 'text-primary-fixed',
-      msg:    state.response.slice(0, 120),
+      msg:    state.response.slice(0, 140),
     }])
   }, [state.response])
 
@@ -72,9 +75,7 @@ export default function System() {
 
   const handleCmd = () => {
     if (!cmdVal.trim()) return
-    const now = new Date()
-    const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}.000`
-    setLogs(prev => [...prev, { ts, tag: 'INPUT', tagCls: 'text-tertiary', msg: `$ ${cmdVal}` }])
+    setLogs(prev => [...prev, { ts: makeTs(), tag: 'INPUT', tagCls: 'text-tertiary', msg: `$ ${cmdVal}` }])
     sendInput(cmdVal)
     setCmdVal('')
   }
@@ -85,7 +86,7 @@ export default function System() {
       {/* ── Main grid ──────────────────────────────────────────────── */}
       <main className="pl-20 pt-24 pb-20 min-h-screen grid grid-cols-12 gap-6 p-8">
 
-        {/* ── Left column: Sentry + SSH ──────────────────────────── */}
+        {/* ── Left column ─────────────────────────────────────────── */}
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
 
           {/* Sentry Docker Grid */}
@@ -135,7 +136,9 @@ export default function System() {
                 </span>
               </div>
               <div className="w-full bg-surface-variant h-0.5 rounded-full overflow-hidden">
-                <div className={`h-full transition-all duration-500 ${connected ? 'w-[88%] bg-primary shadow-[0_0_8px_#c6c6c8]' : 'w-0'}`} />
+                <div className={`h-full transition-all duration-500 ${
+                  connected ? 'w-[88%] bg-primary shadow-[0_0_8px_#c6c6c8]' : 'w-0'
+                }`} />
               </div>
             </div>
           </section>
@@ -197,9 +200,7 @@ export default function System() {
                 <div key={i} className={`log-line ${line.italic ? 'italic' : ''}`}>
                   <span className="text-primary-container/60 flex-shrink-0 font-mono">{line.ts}</span>
                   <span className={`${line.tagCls} flex-shrink-0 font-mono`}>[{line.tag}]</span>
-                  <span className={line.errCls || 'text-on-surface'}>
-                    {line.msg}
-                  </span>
+                  <span className={line.errCls || 'text-on-surface'}>{line.msg}</span>
                 </div>
               ))}
               <div ref={logEndRef} />
@@ -237,7 +238,8 @@ export default function System() {
 
       {/* ── Bottom Dock ─────────────────────────────────────────────── */}
       <footer className="fixed bottom-0 left-0 w-full z-50 flex justify-center items-center
-                          gap-20 pb-4 h-16 rounded-t-[32px] bg-[#0e0e0e]/40 backdrop-blur-2xl">
+                          gap-20 pb-4 h-16 rounded-t-[32px] bg-[#0e0e0e]/40 backdrop-blur-2xl
+                          border-t border-[#484848]/15">
         <div className="flex items-center gap-10 bg-surface-container-high/40 px-10 py-2
                          rounded-full border border-outline-variant/10">
           <button className="text-[#454749] hover:text-[#c6c6c8] transition-colors flex items-center gap-2">
@@ -265,11 +267,11 @@ export default function System() {
         </div>
       </footer>
 
-      {/* ── Right quick actions ──────────────────────────────────────── */}
+      {/* ── Right command strip ──────────────────────────────────────── */}
       <div className="fixed right-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-40">
         {[
-          { icon: 'bolt',    hover: 'group-hover:text-tertiary',     title: 'Power'   },
-          { icon: 'cancel',  hover: 'group-hover:text-error',        title: 'Kill'    },
+          { icon: 'bolt',    hover: 'group-hover:text-tertiary',      title: 'Power'   },
+          { icon: 'cancel',  hover: 'group-hover:text-error',         title: 'Kill'    },
           { icon: 'refresh', hover: 'group-hover:text-primary-fixed', title: 'Restart' },
         ].map(({ icon, hover, title }) => (
           <button

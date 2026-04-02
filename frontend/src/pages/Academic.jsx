@@ -1,9 +1,8 @@
 /**
- * Academic.jsx — RAG / Knowledge Hub (J.A.R.V.I.S. V5.5 Academic Hub design)
- * Shows: PDF upload zone, flashcard widget, RAG stats, generated notebooks list,
- * bottom input dock.
+ * Academic.jsx — V5.5 Academic Hub
+ * RAG Knowledge Hub: PDF upload zone, flashcard widget, RAG stats, notebooks list, bottom dock.
  */
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useJARVIS } from '../hooks/useJARVIS.js'
 import WaveformAnimation from '../components/WaveformAnimation.jsx'
 
@@ -39,16 +38,15 @@ const MOCK_NOTEBOOKS = [
 
 const FLASHCARD = {
   question: '"Explain the core principle of RAG (Retrieval-Augmented Generation)..."',
+  answer:   'RAG combines retrieval of relevant documents with language generation, grounding responses in factual, up-to-date knowledge.',
   subject:  'Neural Arch',
 }
 
 export default function Academic() {
-  const { state, loading, sendInput, connected } = useJARVIS()
+  const { state, loading, sendInput } = useJARVIS()
   const [inputVal, setInputVal]     = useState('')
-  const [ragStats, setRagStats]     = useState({ tokens: '1.2M', links: 8402 })
   const [showAnswer, setShowAnswer] = useState(false)
   const [dragOver, setDragOver]     = useState(false)
-  const [notebooks, setNotebooks]   = useState(MOCK_NOTEBOOKS)
 
   const handleSend = () => {
     if (!inputVal.trim() || loading) return
@@ -56,12 +54,20 @@ export default function Academic() {
     setInputVal('')
   }
 
+  const ragTokens  = '1.2M'
+  const ragLinks   = 8402
+
+  // JARVIS-generated notebooks from recent academic commands
+  const jarvisNotebooks = state.last_5_commands.filter(c =>
+    c.input?.toLowerCase().match(/studia|esame|lezione|appunti|ripassa/)
+  )
+
   return (
     <div className="bg-surface-container-lowest min-h-screen font-body text-on-surface
                     selection:bg-tertiary selection:text-on-tertiary overflow-x-hidden">
 
       {/* ── Main Content ──────────────────────────────────────────── */}
-      <main className="pl-20 pt-24 pb-32 px-8 max-w-7xl mx-auto">
+      <main className="pl-16 pt-24 pb-36 px-8 max-w-7xl mx-auto">
 
         {/* Hero header */}
         <div className="mb-10">
@@ -90,11 +96,11 @@ export default function Academic() {
                           ${dragOver ? 'border-tertiary/60 bg-tertiary/5' : 'border-outline-variant/10'}`}
             >
               {/* Background texture */}
-              <div className="absolute inset-0 opacity-5 pointer-events-none
+              <div className="absolute inset-0 opacity-10 pointer-events-none
                               bg-gradient-to-br from-primary/20 to-transparent" />
 
-              <div className="w-20 h-20 rounded-full bg-surface-container-high flex items-center justify-center
-                               mb-6 border border-outline-variant/20
+              <div className="w-20 h-20 rounded-full bg-surface-container-high flex items-center
+                               justify-center mb-6 border border-outline-variant/20
                                group-hover:scale-110 transition-transform duration-500">
                 <span className="material-symbols-outlined text-primary text-3xl">upload_file</span>
               </div>
@@ -134,8 +140,7 @@ export default function Academic() {
                 {showAnswer ? (
                   <div className="border-t border-outline-variant/20 pt-3">
                     <p className="text-sm text-primary-fixed leading-relaxed">
-                      RAG combines retrieval of relevant documents with language generation,
-                      grounding responses in factual, up-to-date knowledge.
+                      {FLASHCARD.answer}
                     </p>
                     <button
                       onClick={() => setShowAnswer(false)}
@@ -173,7 +178,7 @@ export default function Academic() {
                   Contextual Tokens
                 </span>
                 <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-3xl font-black text-primary-fixed">{ragStats.tokens}</span>
+                  <span className="text-3xl font-black text-primary-fixed">{ragTokens}</span>
                   <span className="text-[10px] text-tertiary">+14%</span>
                 </div>
                 <div className="w-full bg-surface-variant h-0.5 mt-4 rounded-full overflow-hidden">
@@ -186,7 +191,7 @@ export default function Academic() {
                 </span>
                 <div className="flex items-baseline gap-2 mt-2">
                   <span className="text-3xl font-black text-primary-fixed">
-                    {ragStats.links.toLocaleString()}
+                    {ragLinks.toLocaleString()}
                   </span>
                 </div>
                 <div className="w-full bg-surface-variant h-0.5 mt-4 rounded-full overflow-hidden">
@@ -207,7 +212,7 @@ export default function Academic() {
               </div>
 
               <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-                {notebooks.map(nb => (
+                {MOCK_NOTEBOOKS.map(nb => (
                   <div
                     key={nb.id}
                     className="group flex items-center gap-5 p-4 rounded-2xl
@@ -242,25 +247,21 @@ export default function Academic() {
                   </div>
                 ))}
 
-                {/* JARVIS-generated notebooks from recent conversations */}
-                {state.last_5_commands
-                  .filter(c => c.input?.toLowerCase().includes('studia') ||
-                                c.input?.toLowerCase().includes('esame') ||
-                                c.input?.toLowerCase().includes('lezione'))
-                  .map((cmd, i) => (
-                    <div key={`jarvis-${i}`}
-                         className="flex items-center gap-5 p-4 rounded-2xl
-                                     border border-tertiary/10 bg-tertiary/5">
-                      <div className="w-12 h-12 rounded-xl bg-tertiary/10 flex items-center
-                                       justify-center flex-shrink-0">
-                        <span className="material-symbols-outlined text-tertiary">auto_awesome</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-primary-fixed truncate">{cmd.input}</h4>
-                        <p className="text-[11px] text-on-surface-variant">{cmd.response?.slice(0, 80)}</p>
-                      </div>
+                {/* JARVIS-generated from recent academic commands */}
+                {jarvisNotebooks.map((cmd, i) => (
+                  <div key={`j-${i}`}
+                       className="flex items-center gap-5 p-4 rounded-2xl
+                                   border border-tertiary/10 bg-tertiary/5">
+                    <div className="w-12 h-12 rounded-xl bg-tertiary/10 flex items-center
+                                     justify-center flex-shrink-0">
+                      <span className="material-symbols-outlined text-tertiary">auto_awesome</span>
                     </div>
-                  ))}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-bold text-primary-fixed truncate">{cmd.input}</h4>
+                      <p className="text-[11px] text-on-surface-variant">{cmd.response?.slice(0, 80)}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -311,7 +312,7 @@ export default function Academic() {
 
           {/* Footer icon row */}
           <div className="flex justify-center items-center gap-20 py-4">
-            <span className="material-symbols-outlined text-[#ffdd79] drop-shadow-[0_0_8px_rgba(255,221,121,0.5)] cursor-pointer">
+            <span className="material-symbols-outlined text-tertiary drop-shadow-[0_0_8px_rgba(255,221,121,0.5)] cursor-pointer">
               mic_none
             </span>
             <span className="material-symbols-outlined text-[#454749] hover:text-[#c6c6c8] transition-colors cursor-pointer">

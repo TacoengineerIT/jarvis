@@ -1,10 +1,10 @@
 import { NavLink } from 'react-router-dom'
 
 const NAV_ITEMS = [
-  { to: '/',          icon: 'home',             label: 'Intelligence' },
-  { to: '/dashboard', icon: 'dashboard',         label: 'Dashboard'    },
-  { to: '/academic',  icon: 'school',            label: 'Academic'     },
-  { to: '/system',    icon: 'terminal',          label: 'System'       },
+  { to: '/',          icon: 'home',      label: 'Intelligence' },
+  { to: '/dashboard', icon: 'dashboard', label: 'Dashboard'    },
+  { to: '/academic',  icon: 'school',    label: 'Academic'     },
+  { to: '/system',    icon: 'settings',  label: 'System'       },
 ]
 
 export default function NavigationDrawer() {
@@ -15,7 +15,7 @@ export default function NavigationDrawer() {
         <div className="w-10 h-10 rounded-full border border-primary/20 flex items-center justify-center overflow-hidden">
           <div className="w-full h-full bg-gradient-to-br from-primary to-primary-container rounded-full opacity-80" />
         </div>
-        <span className="text-[8px] font-bold tracking-widest text-[#e2e2e4] uppercase">V4.0</span>
+        <span className="text-[8px] font-bold tracking-widest text-[#e2e2e4] uppercase">V5.5</span>
       </div>
 
       {/* Nav buttons */}

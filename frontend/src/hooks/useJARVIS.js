@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8765/ws'
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:5000'
 
 const DEFAULT_STATE = {
   jarvis_state:    'LISTENING',

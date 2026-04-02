@@ -1,6 +1,6 @@
 /**
- * Dashboard.jsx — Bento-grid dashboard (J.A.R.V.I.S. V5.5 Dashboard design)
- * Shows: Asset Overview, Academic Progress, System Health, Priority Event, orb + voice.
+ * Dashboard.jsx — V5.5 Dashboard (Bento grid)
+ * Large orb left, bento data cards right, bottom transcription dock.
  */
 import { useState } from 'react'
 import { useJARVIS, getMoodEmoji, getMoodColor } from '../hooks/useJARVIS.js'
@@ -17,12 +17,12 @@ function BentoCard({ children, className = '', colSpan = 1 }) {
   )
 }
 
-function MiniBar({ value = 0, max = 100, color = 'bg-primary', glow = '' }) {
+function MiniBar({ pct = 0, color = 'bg-primary', glow = '' }) {
   return (
     <div className="w-full bg-surface-variant h-0.5 rounded-full overflow-hidden">
       <div
         className={`h-full ${color} ${glow} transition-all duration-700`}
-        style={{ width: `${Math.min((value / max) * 100, 100)}%` }}
+        style={{ width: `${Math.min(pct, 100)}%` }}
       />
     </div>
   )
@@ -38,57 +38,66 @@ export default function Dashboard() {
     setInputVal('')
   }
 
-  // Financial computations
-  const monthlyBudget = 2000
-  const totalSpent = state.last_5_commands.reduce
-    ? 0 : 0  // Will come from state when finance API populates it
-  const budgetPct = Math.min((state.today_spent / (monthlyBudget / 30)) * 100, 100)
-  const moodPct = (state.mood_score / 10) * 100
+  const dailyLimit = 15
+  const budgetPct  = Math.min((state.today_spent / dailyLimit) * 100, 100)
+  const moodPct    = (state.mood_score / 10) * 100
+
+  const headline = {
+    RECORDING:  <>Recording <span className="text-tertiary">...</span></>,
+    ACTIVE:     <>Recording <span className="text-tertiary">...</span></>,
+    PROCESSING: <>Processing <span className="text-tertiary">...</span></>,
+    SPEAKING:   <>Responding <span className="text-tertiary">...</span></>,
+  }[state.jarvis_state] || <>Listening for <span className="text-tertiary">"Jarvis"</span></>
 
   return (
     <div className="flex h-screen w-full bg-surface-container-lowest overflow-hidden">
-      {/* ── Background ambient ─────────────────────────────────────── */}
+
+      {/* Background ambient */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-1/4 -left-1/4 w-[50%] h-[50%] bg-primary/5 blur-[120px] rounded-full" />
         <div className="absolute bottom-1/4 -right-1/4 w-[40%] h-[40%] bg-tertiary/5 blur-[120px] rounded-full" />
       </div>
 
-      {/* ── Main canvas ────────────────────────────────────────────── */}
+      {/* Main canvas (sidebar comes from NavigationDrawer in App.jsx) */}
       <main className="flex-1 ml-16 relative flex items-center justify-center overflow-hidden p-8 lg:p-12">
 
+        {/* Top Dynamic Island */}
+        <header className="fixed top-0 left-16 right-0 z-50 flex items-center justify-center px-6 pointer-events-none">
+          <div className="dynamic-island mt-4 mx-auto max-w-md w-full pointer-events-auto
+                           hover:scale-[1.02] group">
+            <span className="material-symbols-outlined text-sm text-tertiary">blur_on</span>
+            <div className="flex-1 overflow-hidden">
+              <p className="font-medium uppercase tracking-[0.2em] text-[10px] text-[#c6c6c8] animate-pulse">
+                Dynamic Briefing: All systems nominal. Schedule optimized.
+              </p>
+            </div>
+            <span className="material-symbols-outlined text-lg text-[#acabaa]">account_circle</span>
+          </div>
+        </header>
+
         {/* Intelligence Hub grid */}
-        <div className="w-full max-w-7xl grid grid-cols-12 gap-8 items-center z-10">
+        <div className="w-full max-w-7xl grid grid-cols-12 gap-8 items-center z-10 mt-8">
 
           {/* Left: Orb + headline */}
           <div className="col-span-12 lg:col-span-7 flex flex-col items-center lg:items-start space-y-10">
             <div className="relative group">
-              {/* Voice reactive glow */}
-              <div className="absolute inset-0 bg-tertiary/10 rounded-full blur-[100px] -z-10
-                              animate-pulse" />
+              <div className="absolute inset-0 bg-tertiary/10 rounded-full blur-[100px] -z-10 animate-pulse" />
               <MercuryOrb jarvisState={state.jarvis_state} size="lg" />
             </div>
 
             <div className="space-y-4 text-center lg:text-left max-w-xl">
               <h1 className="text-4xl lg:text-6xl font-black tracking-tighter text-primary-fixed leading-tight">
-                {['RECORDING','ACTIVE'].includes(state.jarvis_state)
-                  ? <>Recording <span className="text-tertiary">...</span></>
-                  : state.jarvis_state === 'PROCESSING'
-                  ? <>Processing <span className="text-tertiary">...</span></>
-                  : state.jarvis_state === 'SPEAKING'
-                  ? <>Responding <span className="text-tertiary">...</span></>
-                  : <>Listening for <span className="text-tertiary">"Jarvis"</span></>
-                }
+                {headline}
               </h1>
 
-              {state.response && (
+              {state.response ? (
                 <p className="text-on-surface-variant font-body text-base leading-relaxed max-w-md
                                border-l-2 border-tertiary/40 pl-4 italic">
                   {state.response}
                 </p>
-              )}
-              {!state.response && (
+              ) : (
                 <p className="text-on-surface-variant font-body text-base leading-relaxed max-w-md">
-                  Neural link established. Workspace synchronised across all active nodes.
+                  The neural link is established. Your workspace is synchronized across all active nodes.
                 </p>
               )}
             </div>
@@ -97,7 +106,7 @@ export default function Dashboard() {
           {/* Right: Bento cards */}
           <div className="col-span-12 lg:col-span-5 grid grid-cols-2 gap-4">
 
-            {/* Financial overview — full width */}
+            {/* Budget Overview — full width */}
             <BentoCard colSpan={2}>
               <div className="flex justify-between items-start mb-6">
                 <div className="flex flex-col gap-1">
@@ -119,17 +128,16 @@ export default function Dashboard() {
                 </div>
               </div>
               <MiniBar
-                value={budgetPct}
-                max={100}
+                pct={budgetPct}
                 color={budgetPct > 80 ? 'bg-error' : 'bg-primary'}
                 glow={budgetPct > 80
                   ? 'shadow-[0_0_12px_rgba(238,125,119,0.5)]'
-                  : 'shadow-[0_0_12px_rgba(255,221,121,0.4)]'}
+                  : 'shadow-[0_0_12px_#ffdd79]'}
               />
               <div className="flex justify-between text-[10px] text-on-surface-variant
                                uppercase tracking-widest mt-1.5">
                 <span>Daily burn</span>
-                <span>{budgetPct.toFixed(0)}% of daily limit</span>
+                <span>{budgetPct.toFixed(0)}% of €{dailyLimit} limit</span>
               </div>
               {state.budget_alerts[0] && (
                 <p className="mt-3 text-[10px] text-error bg-error/10 px-3 py-1 rounded-lg
@@ -139,20 +147,17 @@ export default function Dashboard() {
               )}
             </BentoCard>
 
-            {/* Mood card */}
+            {/* Mood */}
             <BentoCard>
               <span className="material-symbols-outlined text-primary-fixed mb-3 block">
                 sentiment_satisfied
               </span>
-              <h4 className="text-xs uppercase tracking-widest text-on-surface-variant mb-1">
-                Mood
-              </h4>
+              <h4 className="text-xs uppercase tracking-widest text-on-surface-variant mb-1">Mood</h4>
               <p className={`text-xl font-bold ${getMoodColor(state.mood)}`}>
                 {getMoodEmoji(state.mood)} {state.mood}
               </p>
               <MiniBar
-                value={state.mood_score}
-                max={10}
+                pct={moodPct}
                 color="bg-primary"
                 glow="shadow-[0_0_8px_rgba(198,198,200,0.4)]"
               />
@@ -161,12 +166,10 @@ export default function Dashboard() {
               </p>
             </BentoCard>
 
-            {/* System health card */}
+            {/* System health */}
             <BentoCard>
               <span className="material-symbols-outlined text-tertiary mb-3 block">bolt</span>
-              <h4 className="text-xs uppercase tracking-widest text-on-surface-variant mb-1">
-                System
-              </h4>
+              <h4 className="text-xs uppercase tracking-widest text-on-surface-variant mb-1">System</h4>
               <p className="text-xl font-bold text-primary-fixed">
                 {connected ? 'Online' : 'Offline'}
               </p>
@@ -182,27 +185,26 @@ export default function Dashboard() {
             {/* Next event — full width */}
             <BentoCard colSpan={2} className="flex items-center gap-5">
               <div className="w-14 h-14 rounded-2xl bg-surface-container flex-shrink-0
-                               flex items-center justify-center border border-outline-variant/20">
+                               flex items-center justify-center border border-outline-variant/20
+                               overflow-hidden">
                 <span className="material-symbols-outlined text-tertiary">event</span>
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="text-xs uppercase tracking-widest text-tertiary mb-1">
-                  Next Event
-                </h4>
+                <h4 className="text-xs uppercase tracking-widest text-tertiary mb-1">Priority Event</h4>
                 {state.next_event ? (
                   <>
                     <p className="text-sm text-primary-fixed font-medium truncate">
                       {state.next_event.title}
                     </p>
                     <p className="text-[10px] text-on-surface-variant mt-0.5">
-                      {state.next_event.start_time?.slice(11, 16) || '—'}
+                      {state.next_event.start_time?.slice(11, 16) || '—'} · Briefing ready for playback.
                     </p>
                   </>
                 ) : (
                   <>
                     <p className="text-sm text-primary-fixed font-medium">No events scheduled</p>
                     <p className="text-[10px] text-on-surface-variant mt-0.5">
-                      Calendar data loading...
+                      Calendar sync in progress...
                     </p>
                   </>
                 )}
@@ -214,14 +216,14 @@ export default function Dashboard() {
         {/* Transcription above footer */}
         {state.user_input && (
           <div className="absolute bottom-28 left-1/2 -translate-x-1/2 text-center max-w-xl w-full px-4">
-            <p className="text-sm font-light tracking-[0.1em] text-primary-dim/60 italic truncate">
+            <p className="text-sm font-light tracking-[0.1em] text-primary-fixed/60 italic truncate">
               "{state.user_input}"
             </p>
           </div>
         )}
       </main>
 
-      {/* ── Bottom Dock ────────────────────────────────────────────── */}
+      {/* Bottom Dock */}
       <footer className="fixed bottom-0 left-16 right-0 z-50 flex flex-col items-center pb-4">
         <div className="max-w-xl w-full px-6">
           <div className="glass-island rounded-[40px] border border-[#484848]/20 shadow-2xl
@@ -253,8 +255,7 @@ export default function Dashboard() {
                 className="w-12 h-12 rounded-full bg-primary-fixed text-on-primary-fixed
                             flex items-center justify-center
                             shadow-[0_0_20px_rgba(198,198,200,0.3)]
-                            hover:scale-105 active:scale-95 transition-all
-                            disabled:opacity-40"
+                            hover:scale-105 active:scale-95 transition-all disabled:opacity-40"
               >
                 {loading
                   ? <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>

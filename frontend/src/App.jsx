@@ -16,7 +16,7 @@ import Dashboard from './pages/Dashboard.jsx'
 import Academic from './pages/Academic.jsx'
 import System from './pages/System.jsx'
 
-/* Intelligence page is full-bleed (owns its own nav and bottom bar) */
+/* Intelligence page is full-bleed (owns its own sidebar + bottom dock) */
 const FULL_BLEED_ROUTES = ['/']
 
 export default function App() {
