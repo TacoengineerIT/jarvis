@@ -1,23 +1,20 @@
 /**
- * Intelligence.jsx — V5.5 Polished Intelligence Interface
- * Own sidebar, financial stats header, large central orb, status cards footer.
+ * Intelligence.jsx — V5.5 Polished Dashboard
+ * Mercury orb, hero financial stats, status cards, bottom transcription dock.
  */
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useJARVIS, getStateLabel } from '../hooks/useJARVIS.js'
-import MercuryOrb from '../components/MercuryOrb.jsx'
-import WaveformAnimation from '../components/WaveformAnimation.jsx'
 
 const NAV = [
-  { to: '/',          icon: 'home',            label: 'Intel'     },
-  { to: '/dashboard', icon: 'dashboard',        label: 'Dash'      },
-  { to: '/financial', icon: 'account_balance',  label: 'Finance'   },
-  { to: '/academic',  icon: 'school',           label: 'Academic'  },
-  { to: '/system',    icon: 'terminal',         label: 'System'    },
+  { to: '/',          icon: 'home',           end: true  },
+  { to: '/financial', icon: 'account_balance', end: false },
+  { to: '/academic',  icon: 'school',          end: false },
+  { to: '/system',    icon: 'terminal',        end: false },
 ]
 
 export default function Intelligence() {
-  const { state, connected, loading, error, sendInput } = useJARVIS()
+  const { state, connected, loading, sendInput, triggerWakeWord } = useJARVIS()
   const [inputVal, setInputVal] = useState('')
 
   const handleSend = () => {
@@ -26,185 +23,135 @@ export default function Intelligence() {
     setInputVal('')
   }
 
-  const rentGap     = 110
-  const portfolio   = (2000 - state.today_spent).toFixed(2)
-  const budgetPct   = Math.min((state.today_spent / 15) * 100, 100)
-  const lastCmd     = state.last_5_commands[state.last_5_commands.length - 1]
-
-  const headline = {
-    RECORDING:  <>Recording <span className="text-tertiary">...</span></>,
-    ACTIVE:     <>Recording <span className="text-tertiary">...</span></>,
-    PROCESSING: <>Processing <span className="text-tertiary">...</span></>,
-    SPEAKING:   <>Responding <span className="text-tertiary">...</span></>,
-  }[state.jarvis_state] || <>V5.5 <span className="text-tertiary">Active</span></>
+  const lastCmd = state.last_5_commands[state.last_5_commands.length - 1]
 
   return (
-    <div className="h-screen w-screen bg-black flex overflow-hidden">
+    <div className="h-screen w-screen liquid-mesh selection:bg-tertiary overflow-hidden">
 
       {/* ── Sidebar ─────────────────────────────────────────────────── */}
-      <nav className="flex-shrink-0 w-20 h-full flex flex-col py-8 z-50
-                      border-r border-white/5 apple-glass items-center gap-0">
-        <div className="flex flex-col items-center mb-10">
-          <div className="w-9 h-9 rounded-full bg-zinc-800/60 flex items-center justify-center mb-2">
-            <div className="w-full h-full mercury-gradient rounded-full opacity-80" />
+      <nav className="fixed left-0 top-0 h-screen w-20 flex flex-col items-center py-4 z-50
+                      border-r border-white/5 bg-black/40 backdrop-blur-3xl">
+        <div className="mb-8 p-4">
+          <div className="w-10 h-10 rounded-full border border-white/10 bg-zinc-800/60
+                           flex items-center justify-center">
+            <span className="text-zinc-300 text-sm font-bold tracking-widest">J</span>
           </div>
-          <span className="font-bold tracking-widest text-[8px] uppercase text-zinc-400">
-            JARVIS
-          </span>
         </div>
 
-        <div className="flex flex-col gap-5 items-center flex-1">
-          {NAV.map(({ to, icon, label }) => (
+        <div className="flex flex-col gap-4 items-center flex-1 w-full px-3">
+          {NAV.map(({ to, icon, end }) => (
             <NavLink
               key={to}
               to={to}
-              end={to === '/'}
+              end={end}
               className={({ isActive }) =>
                 isActive
-                  ? 'flex flex-col items-center gap-1 text-white bg-white/10 rounded-2xl w-14 h-14 justify-center transition-all duration-300 scale-105'
-                  : 'flex flex-col items-center gap-1 text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-all duration-300 w-14 h-14 rounded-2xl justify-center'
+                  ? 'glass-island w-full aspect-square flex items-center justify-center text-white rounded-lg'
+                  : 'w-full aspect-square flex items-center justify-center text-zinc-500 hover:text-zinc-300 transition-colors'
               }
             >
               <span className="material-symbols-outlined text-xl">{icon}</span>
-              <span className="text-[7px] uppercase tracking-widest">{label}</span>
             </NavLink>
           ))}
         </div>
 
-        <div className="mt-auto flex flex-col items-center gap-3">
-          <div className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-tertiary shadow-[0_0_6px_#ffdd79]' : 'bg-error'}`} />
+        <div className="mt-auto p-4">
+          <span className="material-symbols-outlined text-zinc-500 hover:text-zinc-300 cursor-pointer text-xl">
+            settings
+          </span>
         </div>
       </nav>
 
-      {/* ── Main ────────────────────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+      {/* ── Top Island ──────────────────────────────────────────────── */}
+      <header className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
+        <div className="mt-4 glass-island rounded-full px-4 py-2 flex items-center gap-3
+                         pointer-events-auto">
+          <span className="material-symbols-outlined text-white text-base">bubble_chart</span>
+          <p className="uppercase text-[10px] font-medium tracking-widest text-zinc-300 whitespace-nowrap">
+            {state.briefing || 'SYSTEM NOMINAL · PORTFOLIO ACTIVE'}
+          </p>
+          <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+            connected ? 'bg-tertiary animate-pulse shadow-[0_0_6px_#ffdd79]' : 'bg-error'
+          }`} />
+        </div>
+      </header>
 
-        {/* ── Financial Stats Header ─────────────────────────────────── */}
-        <header className="flex-shrink-0 flex items-center gap-6 px-10 py-4
-                            border-b border-white/5 apple-glass">
-          {error && (
-            <div className="flex items-center gap-2 text-error text-xs mr-2">
-              <span className="material-symbols-outlined text-sm">wifi_off</span>
-              {error}
-            </div>
-          )}
+      {/* ── Main Canvas ─────────────────────────────────────────────── */}
+      <main className="ml-20 h-screen relative flex flex-col items-center justify-center p-4 overflow-hidden">
 
-          <div className="flex items-baseline gap-2">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-500">Portfolio</span>
-            <span className="text-lg font-bold text-white">€{portfolio}</span>
+        {/* Hero Financial Stats */}
+        <div className="absolute top-24 w-full max-w-xl flex justify-between px-8 z-20">
+          <div>
+            <p className="uppercase text-[10px] text-zinc-500 tracking-widest mb-1">Portfolio Balance</p>
+            <h2 className="text-4xl font-bold text-white tracking-tight neon-shadow">
+              €{(2000 - state.today_spent).toFixed(2)}
+            </h2>
           </div>
-
-          <div className="w-px h-5 bg-white/10" />
-
-          <div className="flex items-baseline gap-2">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-500">Rent Gap</span>
-            <span className="text-lg font-bold text-tertiary">€{rentGap}</span>
-          </div>
-
-          <div className="w-px h-5 bg-white/10" />
-
-          <div className="flex items-baseline gap-2">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-500">Daily</span>
-            <span className="text-sm font-semibold text-zinc-200">€{state.today_spent.toFixed(2)}</span>
-          </div>
-
-          {/* Budget bar */}
-          <div className="flex-1 max-w-xs">
-            <div className="h-0.5 w-full bg-zinc-800 rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all duration-700 rounded-full ${
-                  budgetPct > 80 ? 'bg-error' : 'bg-tertiary'
-                }`}
-                style={{ width: `${budgetPct}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="ml-auto flex items-center gap-3">
-            <div className="overflow-hidden max-w-[200px]">
-              <p className="text-[10px] text-zinc-500 tracking-widest whitespace-nowrap marquee-text">
-                {state.briefing || 'BRIEFING: All systems nominal · Neural link stable'}
-              </p>
-            </div>
-            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${connected ? 'bg-tertiary shadow-[0_0_6px_#ffdd79]' : 'bg-error'}`} />
-          </div>
-        </header>
-
-        {/* ── Center Canvas ─────────────────────────────────────────── */}
-        <div className="flex-1 flex items-center justify-center relative overflow-hidden">
-          {/* Ambient glow */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96
-                            bg-primary/5 blur-[120px] rounded-full" />
-            <div className="absolute bottom-1/4 right-1/4 w-64 h-64
-                            bg-tertiary/5 blur-[80px] rounded-full" />
-          </div>
-
-          <div className="flex flex-col items-center gap-8 z-10">
-            {/* Large orb ~w-56 */}
-            <div className="relative w-56 h-56 flex-shrink-0">
-              <MercuryOrb jarvisState={state.jarvis_state} size="lg" />
-            </div>
-
-            <div className="text-center">
-              <h1 className="text-4xl font-black tracking-tighter text-white mb-2 uppercase">
-                {headline}
-              </h1>
-              <p className="text-zinc-500 tracking-[0.2em] text-[10px] uppercase">
-                {connected ? getStateLabel(state.jarvis_state) : 'Awaiting connection'}
-              </p>
-              {state.mood && (
-                <p className="text-2xl mt-3">{state.mood}</p>
-              )}
-            </div>
+          <div className="text-right">
+            <p className="uppercase text-[10px] text-zinc-500 tracking-widest mb-1">Rent Gap</p>
+            <h2 className="text-2xl font-bold text-tertiary tracking-tight neon-shadow">€110</h2>
           </div>
         </div>
 
-        {/* ── Status Cards ──────────────────────────────────────────── */}
-        <div className="flex-shrink-0 grid grid-cols-3 gap-0 border-t border-white/5">
-          {/* Engine state */}
-          <div className="apple-glass px-8 py-5 border-r border-white/5">
-            <p className="text-[9px] uppercase tracking-widest text-zinc-600 mb-1">Engine State</p>
-            <p className="text-sm font-bold text-white">{getStateLabel(state.jarvis_state)}</p>
-            <div className="flex items-center gap-2 mt-2">
-              <div className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-tertiary animate-pulse' : 'bg-error'}`} />
-              <span className="text-[9px] text-zinc-500 uppercase tracking-widest">
-                {connected ? 'HTTP Link Active' : 'Disconnected'}
+        {/* Central Mercury Orb */}
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="mercury-orb w-56 h-56 rounded-full mb-8 relative">
+            <div className="absolute inset-0 rounded-full border border-white/20 scale-95" />
+            <div className="absolute inset-0 rounded-full bg-white/5 blur-xl" />
+          </div>
+          <div className="text-center">
+            <h1 className="text-4xl font-black uppercase tracking-widest text-white mb-1">
+              {connected ? 'V5.5 ACTIVE' : 'OFFLINE'}
+            </h1>
+            <p className="text-zinc-500 uppercase text-[10px] tracking-widest">
+              {getStateLabel(state.jarvis_state)}
+            </p>
+          </div>
+        </div>
+
+        {/* Status Cards */}
+        <div className="absolute bottom-32 w-full max-w-4xl flex justify-between px-8">
+          <div className="glass-island p-4 rounded-xl w-64">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="material-symbols-outlined text-tertiary">bolt</span>
+              <p className="uppercase text-[10px] text-zinc-400 tracking-widest">Engine Health</p>
+            </div>
+            <div className="flex items-end justify-between">
+              <span className="text-xl font-bold text-white uppercase tracking-wider">
+                {connected ? 'Optimal' : 'Offline'}
               </span>
+              <span className="text-[9px] text-zinc-500 font-mono">{connected ? '99.8%' : '0%'}</span>
+            </div>
+            <div className="mt-4 h-0.5 w-full bg-white/5 rounded-full overflow-hidden">
+              <div className={`h-full bg-white/40 transition-all duration-700 ${connected ? 'w-[99%]' : 'w-0'}`} />
             </div>
           </div>
 
-          {/* Last command */}
-          <div className="apple-glass px-8 py-5 border-r border-white/5">
-            <p className="text-[9px] uppercase tracking-widest text-zinc-600 mb-1">Last Command</p>
-            {lastCmd ? (
-              <>
-                <p className="text-sm font-mono text-white truncate">{lastCmd.user || lastCmd.input}</p>
-                <p className="text-[10px] text-zinc-500 mt-1 truncate italic">{lastCmd.response?.slice(0, 60)}</p>
-              </>
-            ) : (
-              <p className="text-sm text-zinc-600">—</p>
-            )}
-          </div>
-
-          {/* API cost */}
-          <div className="apple-glass px-8 py-5">
-            <p className="text-[9px] uppercase tracking-widest text-zinc-600 mb-1">API Cost</p>
-            <p className="text-sm font-bold text-white">€{state.api_cost_today.toFixed(4)}</p>
-            <p className="text-[10px] text-zinc-500 mt-1">{state.last_5_commands.length} requests today</p>
+          <div className="glass-island p-4 rounded-xl w-64">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="material-symbols-outlined text-white">terminal</span>
+              <p className="uppercase text-[10px] text-zinc-400 tracking-widest">Last Command</p>
+            </div>
+            <div className="bg-black/40 rounded-lg p-2 border border-white/5">
+              <p className="text-[10px] font-mono text-zinc-400 truncate">
+                {lastCmd?.user || 'exec: sync.io --force'}
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* ── Transcription Dock ─────────────────────────────────────── */}
-        <div className="flex-shrink-0 border-t border-white/5 apple-glass px-8 py-4">
-          <div className="max-w-2xl mx-auto flex items-center gap-4">
-            <span className={`material-symbols-outlined flex-shrink-0 transition-colors ${
-              ['RECORDING','SPEAKING'].includes(state.jarvis_state)
-                ? 'text-tertiary drop-shadow-[0_0_8px_rgba(255,221,121,0.5)]'
-                : 'text-zinc-600'
-            }`}>
-              keyboard_voice
-            </span>
+        {/* Bottom Transcription Dock */}
+        <div className="fixed bottom-0 left-20 right-0 z-50 flex justify-center pb-8">
+          <div className="max-w-lg w-full glass-island rounded-full px-6 py-4 flex items-center gap-4">
+            <button
+              onClick={() => triggerWakeWord()}
+              className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center
+                          text-tertiary active:scale-90 transition-transform flex-shrink-0"
+            >
+              <span className="material-symbols-outlined drop-shadow-[0_0_8px_rgba(255,221,121,0.5)]">
+                keyboard_voice
+              </span>
+            </button>
 
             <input
               value={inputVal}
@@ -216,18 +163,22 @@ export default function Intelligence() {
                           text-white placeholder:text-zinc-600 disabled:opacity-50"
             />
 
-            {['RECORDING','SPEAKING'].includes(state.jarvis_state) ? (
-              <WaveformAnimation active />
-            ) : (
-              <button
-                onClick={handleSend}
-                disabled={loading || !inputVal.trim()}
-                className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center
-                            hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
-              >
-                <span className="material-symbols-outlined text-sm">send</span>
-              </button>
-            )}
+            <div className="flex gap-1.5 h-4 items-end flex-shrink-0">
+              <div className="w-0.5 h-2 bg-white/20 rounded-full" />
+              <div className={`w-0.5 h-4 rounded-full transition-all ${
+                loading ? 'bg-tertiary animate-pulse' : 'bg-white/60'
+              }`} />
+              <div className="w-0.5 h-3 bg-white/40 rounded-full" />
+            </div>
+
+            <button
+              onClick={handleSend}
+              disabled={loading || !inputVal.trim()}
+              className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center
+                          text-white hover:bg-white/20 disabled:opacity-30 transition-all flex-shrink-0"
+            >
+              <span className="material-symbols-outlined text-sm">send</span>
+            </button>
           </div>
         </div>
       </main>

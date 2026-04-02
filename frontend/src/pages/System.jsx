@@ -1,50 +1,39 @@
 /**
- * System.jsx — V5.5 Apple-style System DevOps
- * apple-glass panels, JetBrains Mono terminal, led-glow container grid, refined sidebar.
+ * System.jsx — V5.5 Polished System DevOps
+ * w-14 sidebar, Sentry LED grid, Node connectivity, Log streamer, right action strip.
  */
 import { useState, useEffect, useRef } from 'react'
+import { NavLink } from 'react-router-dom'
 import { useJARVIS } from '../hooks/useJARVIS.js'
 
-const INITIAL_LOGS = [
-  { ts: '14:22:01.032', tag: 'SYSTEM',  tagCls: 'text-tertiary',   msg: 'Kernel synchronization complete. Ready for I/O requests.' },
-  { ts: '14:22:01.045', tag: 'DOCKER',  tagCls: 'text-secondary',  msg: 'Container "sentry-redis-master" health check passed.' },
-  { ts: '14:22:02.112', tag: 'WARN',    tagCls: 'text-error',      msg: 'Detected high-entropy traffic on port 443 (PC-Scuola).' },
-  { ts: '14:22:02.150', tag: 'SYSTEM',  tagCls: 'text-tertiary',   msg: 'Deploying mitigation protocol "JARVIS_SHIELD_V4"...' },
-  { ts: '14:22:03.001', tag: 'SSH',     tagCls: 'text-secondary',  msg: 'Handshake completed. Session ID: _scu001_' },
-  { ts: '14:22:03.455', tag: 'INFO',    tagCls: 'text-zinc-600',   msg: '# Routine health sweep initiated. Estimated time: 12ms', italic: true },
-  { ts: '14:22:04.220', tag: 'SYSTEM',  tagCls: 'text-tertiary',   msg: 'Sub-processor orbital status at 12%. Heat sink optimal.' },
-  { ts: '14:22:05.101', tag: 'DOCKER',  tagCls: 'text-secondary',  msg: 'Image "scuola-node-exporter" updated to latest digest.' },
+const NAV = [
+  { to: '/',          icon: 'dashboard' },
+  { to: '/financial', icon: 'payments'  },
+  { to: '/academic',  icon: 'school'    },
+  { to: '/system',    icon: 'settings'  },
 ]
 
 const CONTAINERS = [
-  { id: 'SRV-01',  status: 'up'   },
-  { id: 'DB-MGR',  status: 'up'   },
-  { id: 'CACHE',   status: 'up'   },
-  { id: 'AUTH',    status: 'up'   },
-  { id: 'NODE-A',  status: 'idle' },
-  { id: 'LOG-X',   status: 'up'   },
-  { id: 'QUEUE',   status: 'up'   },
-  { id: 'ERR-4',   status: 'err'  },
+  { id: 'SRV-01', status: 'up'   },
+  { id: 'DB-MGR', status: 'up'   },
+  { id: 'CACHE',  status: 'up'   },
+  { id: 'AUTH',   status: 'up'   },
+  { id: 'NODE-A', status: 'idle' },
+  { id: 'LOG-X',  status: 'up'   },
+  { id: 'QUEUE',  status: 'up'   },
+  { id: 'ERR-4',  status: 'err'  },
 ]
 
-function ContainerLed({ id, status }) {
-  const cls = {
-    up:   'led-glow-active border',
-    idle: 'led-glow-idle border',
-    err:  'led-glow-error border',
-  }[status] || 'border border-zinc-800 bg-zinc-900'
-
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <div className={`w-full h-1.5 rounded-full ${cls}`} />
-      <span className={`text-[8px] tracking-widest font-mono uppercase ${
-        status === 'err' ? 'text-error' : status === 'up' ? 'text-tertiary' : 'text-zinc-600'
-      }`}>
-        {id}
-      </span>
-    </div>
-  )
-}
+const INITIAL_LOGS = [
+  { ts: '14:22:01.032', tag: 'SYSTEM', tagCls: 'text-tertiary',  msg: 'Kernel synchronization complete. Ready for I/O requests.' },
+  { ts: '14:22:01.045', tag: 'DOCKER', tagCls: 'text-secondary', msg: 'Container "sentry-redis-master" health check passed.' },
+  { ts: '14:22:02.112', tag: 'WARN',   tagCls: 'text-error',     msg: 'Detected unexpected high-entropy traffic on port 443. PC-Scuola.' },
+  { ts: '14:22:02.150', tag: 'SYSTEM', tagCls: 'text-tertiary',  msg: 'Deploying mitigation protocol "JARVIS_SHIELD_V5"...' },
+  { ts: '14:22:03.001', tag: 'SSH',    tagCls: 'text-secondary', msg: 'Handshake completed. Session ID: _scu001_' },
+  { ts: '14:22:03.455', tag: 'INFO',   tagCls: 'text-white/30',  msg: '# Routine health sweep initiated. Estimated time: 12ms', italic: true },
+  { ts: '14:22:04.220', tag: 'SYSTEM', tagCls: 'text-tertiary',  msg: 'Sub-processor orbital status at 12%. Heat sink optimal.' },
+  { ts: '14:22:05.101', tag: 'DOCKER', tagCls: 'text-secondary', msg: 'Image "scuola-node-exporter" updated to latest digest.' },
+]
 
 function makeTs() {
   const n = new Date()
@@ -63,10 +52,7 @@ export default function System() {
   useEffect(() => {
     if (!state.response || paused) return
     setLogs(prev => [...prev.slice(-60), {
-      ts:     makeTs(),
-      tag:    'JARVIS',
-      tagCls: 'text-white',
-      msg:    state.response.slice(0, 160),
+      ts: makeTs(), tag: 'JARVIS', tagCls: 'text-white', msg: state.response.slice(0, 160),
     }])
   }, [state.response])
 
@@ -82,189 +68,262 @@ export default function System() {
   }
 
   return (
-    <div className="bg-black min-h-screen text-white pl-16">
+    <div className="bg-black min-h-screen font-body text-on-surface selection:bg-tertiary/30 overflow-x-hidden">
 
-      {/* ── Header ─────────────────────────────────────────────────── */}
-      <div className="px-10 pt-10 pb-6 border-b border-white/5">
-        <div className="flex items-end justify-between">
-          <div>
-            <h1 className="text-3xl font-black tracking-tight text-white">System DevOps</h1>
-            <p className="text-zinc-500 text-sm mt-1 font-mono">PC-Scuola · Intel i7-6700HQ</p>
+      {/* ── Sidebar (w-14) ──────────────────────────────────────────── */}
+      <aside className="fixed left-0 top-0 h-full w-14 border-r border-white/5 apple-glass
+                         flex flex-col items-center py-6 gap-8 z-[60]">
+        <div className="flex flex-col items-center gap-1">
+          <div className="w-7 h-7 rounded-full border border-white/10 bg-zinc-800/60
+                           flex items-center justify-center">
+            <span className="text-zinc-400 text-[8px] font-bold">J</span>
           </div>
-          <div className="flex items-center gap-6">
-            <div className="text-right">
-              <p className="text-[9px] uppercase tracking-widest text-zinc-600">Containers</p>
-              <p className={`text-lg font-bold font-mono ${upCount >= 7 ? 'text-tertiary' : 'text-error'}`}>
-                {upCount}/{CONTAINERS.length}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-[9px] uppercase tracking-widest text-zinc-600">Link</p>
-              <p className={`text-lg font-bold font-mono ${connected ? 'text-tertiary' : 'text-error'}`}>
-                {connected ? 'UP' : 'DOWN'}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-[9px] uppercase tracking-widest text-zinc-600">API Cost</p>
-              <p className="text-lg font-bold font-mono text-white">
-                €{(state.api_cost_today || 0).toFixed(4)}
-              </p>
-            </div>
-          </div>
+          <span className="text-[7px] font-semibold tracking-widest text-on-surface-variant">V5.5</span>
         </div>
-      </div>
 
-      {/* ── Main Grid ─────────────────────────────────────────────── */}
-      <main className="px-8 pt-6 pb-24 grid grid-cols-12 gap-6">
-
-        {/* ── Left column ─────────────────────────────────────────── */}
-        <div className="col-span-12 lg:col-span-4 flex flex-col gap-5">
-
-          {/* Container LED grid */}
-          <section className="apple-glass rounded-[28px] border border-white/8 p-6">
-            <div className="flex justify-between items-center mb-5">
-              <h2 className="text-[10px] font-bold tracking-widest uppercase text-zinc-400">
-                Sentry Core
-              </h2>
-              <span className={`text-[10px] font-bold font-mono ${upCount >= 7 ? 'text-tertiary' : 'text-error'}`}>
-                {upCount}/{CONTAINERS.length} ACTIVE
-              </span>
-            </div>
-            <div className="grid grid-cols-4 gap-4">
-              {CONTAINERS.map(c => <ContainerLed key={c.id} {...c} />)}
-            </div>
-          </section>
-
-          {/* SSH Status */}
-          <section className="apple-glass rounded-[28px] border border-white/8 p-6">
-            <div className="flex items-center gap-4 mb-5">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center
-                               border ${connected ? 'led-glow-active' : 'led-glow-error'}`}>
-                <span className="material-symbols-outlined text-sm text-white">terminal</span>
-              </div>
-              <div>
-                <h3 className="text-xs font-bold tracking-wider text-white uppercase">
-                  PC-Scuola Cluster
-                </h3>
-                <p className={`text-[9px] font-mono tracking-widest uppercase mt-0.5 ${
-                  connected ? 'text-tertiary' : 'text-error'
-                }`}>
-                  {connected ? 'SSH Link Established' : 'No Connection'}
-                </p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {[
-                { label: 'Protocol', value: 'RSA-4096 / AES-256' },
-                { label: 'Latency',  value: connected ? '4ms' : '—',  valueColor: connected ? 'text-tertiary' : 'text-zinc-600' },
-                { label: 'JARVIS Core', value: state.jarvis_state, valueColor: state.jarvis_state !== 'LISTENING' ? 'text-tertiary' : 'text-secondary' },
-              ].map(({ label, value, valueColor = 'text-zinc-300' }) => (
-                <div key={label} className="flex justify-between items-center text-[10px] font-mono">
-                  <span className="text-zinc-600 uppercase tracking-widest">{label}</span>
-                  <span className={valueColor}>{value}</span>
-                </div>
-              ))}
-              <div className="w-full bg-zinc-800 h-0.5 rounded-full overflow-hidden mt-1">
-                <div className={`h-full transition-all duration-500 ${
-                  connected ? 'w-[88%] bg-primary shadow-[0_0_8px_#c6c6c8]' : 'w-0'
-                }`} />
-              </div>
-            </div>
-          </section>
-
-          {/* Right command strip (as buttons in sidebar on mobile, inline here) */}
-          <div className="flex gap-3">
-            {[
-              { icon: 'bolt',    color: 'hover:text-tertiary',  title: 'Power'   },
-              { icon: 'cancel',  color: 'hover:text-error',     title: 'Kill'    },
-              { icon: 'refresh', color: 'hover:text-white',     title: 'Restart' },
-            ].map(({ icon, color, title }) => (
-              <button
-                key={icon}
-                title={title}
-                className={`flex-1 apple-glass rounded-2xl border border-white/8 py-3
-                             flex items-center justify-center cursor-pointer
-                             hover:scale-105 transition-transform group`}
-              >
-                <span className={`material-symbols-outlined text-zinc-600 ${color} transition-colors`}>
+        <nav className="flex flex-col gap-6 items-center">
+          {NAV.map(({ to, icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === '/'}
+              className={({ isActive }) =>
+                isActive
+                  ? 'text-white bg-white/10 p-2 rounded-lg'
+                  : 'text-on-surface-variant hover:text-white transition-colors p-2'
+              }
+            >
+              {({ isActive }) => (
+                <span
+                  className="material-symbols-outlined !text-[20px]"
+                  style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
+                >
                   {icon}
                 </span>
-              </button>
-            ))}
+              )}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="mt-auto">
+          <span className="text-[8px] text-tertiary font-medium tracking-widest"
+                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+            ACTIVE
+          </span>
+        </div>
+      </aside>
+
+      {/* ── Top Header ──────────────────────────────────────────────── */}
+      <header className="fixed top-0 left-0 right-0 z-50 flex items-center px-4 h-14 pointer-events-none">
+        <div className="pointer-events-auto rounded-full mx-auto max-w-md h-9 apple-glass
+                         border border-white/10 shadow-2xl flex items-center justify-between px-4 w-full">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-on-surface-variant text-sm">blur_on</span>
+            <h1 className="font-semibold uppercase tracking-widest text-[9px] text-on-surface-variant">
+              Dynamic Briefing
+            </h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className={`w-1.5 h-1.5 rounded-full ${
+              connected ? 'bg-tertiary shadow-[0_0_8px_rgba(255,221,121,0.4)]' : 'bg-error'
+            }`} />
+            <span className="material-symbols-outlined text-on-surface-variant text-lg">account_circle</span>
           </div>
         </div>
+      </header>
 
-        {/* ── Center: Log stream ──────────────────────────────────── */}
-        <div className="col-span-12 lg:col-span-8 flex flex-col gap-0">
-          <section className="apple-glass rounded-[28px] border border-white/8
-                               flex flex-col overflow-hidden" style={{ minHeight: '520px' }}>
+      {/* ── Main Grid ───────────────────────────────────────────────── */}
+      <main className="pl-14 pt-14 pb-24 min-h-screen">
+        <div className="p-4 grid grid-cols-12 gap-4 max-w-[1400px] mx-auto">
 
-            {/* Log header */}
-            <div className="px-6 py-4 border-b border-white/5 flex justify-between items-center bg-black/20">
-              <div className="flex items-center gap-3">
-                <div className={`w-2 h-2 rounded-full ${paused ? 'bg-zinc-600' : 'bg-error animate-pulse'}`} />
-                <span className="text-[10px] font-mono tracking-widest uppercase text-zinc-400">
-                  {paused ? 'Stream Paused' : 'Live · JARVIS + System'}
+          {/* ── Left Panel ──────────────────────────────────────────── */}
+          <div className="col-span-12 lg:col-span-4 flex flex-col gap-4">
+
+            {/* Sentry Core */}
+            <section className="apple-glass rounded-xl p-4 border border-white/5 flex flex-col gap-5">
+              <div className="flex justify-between items-center">
+                <h2 className="text-[10px] font-semibold tracking-widest uppercase text-on-surface-variant">
+                  Sentry Core Status
+                </h2>
+                <span className={`text-[10px] font-bold ${upCount >= 7 ? 'text-tertiary' : 'text-error'}`}>
+                  {upCount}/{CONTAINERS.length} UP
                 </span>
               </div>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setPaused(p => !p)}
-                  className="material-symbols-outlined text-sm text-zinc-600
-                              hover:text-white transition-colors cursor-pointer"
-                >
-                  {paused ? 'play_arrow' : 'pause'}
-                </button>
-                <button
-                  onClick={() => setLogs(INITIAL_LOGS)}
-                  className="material-symbols-outlined text-sm text-zinc-600
-                              hover:text-white transition-colors cursor-pointer"
-                >
-                  refresh
-                </button>
+              <div className="grid grid-cols-4 gap-x-2 gap-y-4">
+                {CONTAINERS.map(({ id, status }) => (
+                  <div key={id} className="flex flex-col items-center gap-1.5">
+                    <div className={`w-full h-[2px] rounded-full ${
+                      status === 'up'   ? 'bg-tertiary led-glow-active' :
+                      status === 'idle' ? 'bg-white/40 opacity-40' :
+                                          'bg-error led-glow-error'
+                    }`} />
+                    <span className={`text-[7px] font-medium tracking-tighter uppercase ${
+                      status === 'err' ? 'text-error' : 'text-on-surface-variant'
+                    }`}>
+                      {id}
+                    </span>
+                  </div>
+                ))}
               </div>
-            </div>
+            </section>
 
-            {/* Log body */}
-            <div className="p-6 flex-1 overflow-y-auto space-y-1 font-mono">
-              {logs.map((line, i) => (
-                <div key={i} className={`flex gap-4 text-[11px] leading-loose ${line.italic ? 'italic' : ''}`}>
-                  <span className="text-zinc-700 flex-shrink-0">{line.ts}</span>
-                  <span className={`${line.tagCls} flex-shrink-0`}>[{line.tag}]</span>
-                  <span className="text-zinc-300">{line.msg}</span>
+            {/* Node Connectivity */}
+            <section className="apple-glass rounded-xl p-4 border border-white/5 flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10
+                                 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-on-surface-variant !text-[18px]">terminal</span>
                 </div>
-              ))}
-              <div ref={logEndRef} />
-            </div>
-
-            {/* Terminal input */}
-            <div className="bg-black/60 px-6 py-4 border-t border-white/5">
-              <div className="flex items-center gap-4">
-                <span className="text-tertiary font-bold font-mono text-sm flex-shrink-0">$</span>
-                <input
-                  value={cmdVal}
-                  onChange={e => setCmdVal(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleCmd() }}
-                  disabled={loading}
-                  autoFocus
-                  placeholder="Execute command on JARVIS..."
-                  className="bg-transparent border-none focus:outline-none text-white
-                              font-mono text-sm w-full placeholder:text-zinc-700
-                              disabled:opacity-50"
-                />
-                <button
-                  onClick={handleCmd}
-                  disabled={loading || !cmdVal.trim()}
-                  className="material-symbols-outlined text-zinc-600 hover:text-tertiary
-                              transition-colors cursor-pointer disabled:opacity-30 text-sm"
-                >
-                  send
-                </button>
+                <div>
+                  <h3 className="text-[10px] font-bold tracking-widest uppercase text-white">
+                    PC-Scuola Cluster
+                  </h3>
+                  <p className={`text-[8px] uppercase font-medium tracking-widest ${
+                    connected ? 'text-on-surface-variant' : 'text-error'
+                  }`}>
+                    {connected ? 'Link Established' : 'No Connection'}
+                  </p>
+                </div>
               </div>
-            </div>
-          </section>
+              <div className="space-y-2.5">
+                {[
+                  { label: 'PROTOCOL', value: 'RSA-4096 / AES-256', cls: 'text-white'   },
+                  { label: 'LATENCY',  value: connected ? '4ms' : '—', cls: 'text-tertiary' },
+                  { label: 'STATE',    value: state.jarvis_state,    cls: 'text-secondary' },
+                ].map(({ label, value, cls }) => (
+                  <div key={label} className="flex justify-between items-center">
+                    <span className="text-[9px] text-on-surface-variant font-medium">{label}</span>
+                    <span className={`text-[9px] font-mono ${cls}`}>{value}</span>
+                  </div>
+                ))}
+                <div className="w-full bg-white/5 h-[2px] rounded-full overflow-hidden mt-1">
+                  <div className={`h-full transition-all duration-700 ${
+                    connected ? 'w-[88%] bg-white shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'w-0'
+                  }`} />
+                </div>
+              </div>
+            </section>
+          </div>
+
+          {/* ── Right Panel: Log Streamer ───────────────────────────── */}
+          <div className="col-span-12 lg:col-span-8 flex flex-col gap-4">
+            <section className="flex-1 apple-glass rounded-xl border border-white/10 flex flex-col
+                                  overflow-hidden min-h-[600px] shadow-2xl">
+
+              {/* Log Header */}
+              <div className="px-4 py-3 border-b border-white/10 flex justify-between items-center bg-black/40">
+                <div className="flex items-center gap-2">
+                  <div className={`w-1.5 h-1.5 rounded-full ${paused ? 'bg-zinc-500' : 'bg-error animate-pulse'}`} />
+                  <span className="text-[9px] font-semibold tracking-widest uppercase text-white">
+                    {paused ? 'Stream Paused' : 'Live Stream: Global Events'}
+                  </span>
+                </div>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setPaused(p => !p)}
+                    className="material-symbols-outlined !text-[14px] text-on-surface-variant
+                                cursor-pointer hover:text-white transition-colors"
+                  >
+                    {paused ? 'play_arrow' : 'pause'}
+                  </button>
+                  <button
+                    onClick={() => setLogs(INITIAL_LOGS)}
+                    className="material-symbols-outlined !text-[14px] text-on-surface-variant
+                                cursor-pointer hover:text-white transition-colors"
+                  >
+                    refresh
+                  </button>
+                  <span className="material-symbols-outlined !text-[14px] text-on-surface-variant
+                                    cursor-pointer hover:text-white transition-colors">
+                    filter_list
+                  </span>
+                </div>
+              </div>
+
+              {/* Log Body */}
+              <div className="p-4 flex-1 font-mono text-[11px] leading-relaxed overflow-y-auto space-y-1 bg-black/20">
+                {logs.map((line, i) => (
+                  <div key={i} className={`flex gap-3 ${line.italic ? 'italic' : ''}`}>
+                    <span className="text-white/30 tabular-nums flex-shrink-0">{line.ts}</span>
+                    <span className={`${line.tagCls} font-bold flex-shrink-0`}>[{line.tag}]</span>
+                    <span className="text-on-surface-variant/90">{line.msg}</span>
+                  </div>
+                ))}
+                <div ref={logEndRef} />
+              </div>
+
+              {/* Terminal Input */}
+              <div className="bg-black p-3 border-t border-white/10">
+                <div className="flex items-center gap-3 bg-white/5 rounded-lg px-3 py-2
+                                 border border-white/5 focus-within:border-white/20 transition-all">
+                  <span className="text-tertiary font-mono text-xs font-bold flex-shrink-0">$</span>
+                  <input
+                    value={cmdVal}
+                    onChange={e => setCmdVal(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleCmd() }}
+                    disabled={loading}
+                    autoFocus
+                    placeholder="Execute command on PC-Scuola..."
+                    className="bg-transparent border-none focus:ring-0 text-white font-mono
+                                text-xs w-full placeholder:text-white/20 disabled:opacity-50"
+                  />
+                  <button
+                    onClick={handleCmd}
+                    disabled={loading || !cmdVal.trim()}
+                    className="material-symbols-outlined text-on-surface-variant hover:text-white
+                                transition-colors cursor-pointer !text-[18px] disabled:opacity-30"
+                  >
+                    send
+                  </button>
+                </div>
+              </div>
+            </section>
+          </div>
         </div>
       </main>
+
+      {/* ── Bottom Analyzer Dock ────────────────────────────────────── */}
+      <footer className="fixed bottom-4 left-0 right-0 z-50 px-4 pointer-events-none">
+        <div className="pointer-events-auto mx-auto max-w-lg apple-glass border border-white/10
+                         rounded-2xl h-12 shadow-2xl flex items-center justify-between px-6">
+          <button className="flex items-center gap-2 text-on-surface-variant hover:text-white transition-colors">
+            <span className="material-symbols-outlined !text-[18px]">mic_none</span>
+            <span className="text-[9px] font-bold tracking-widest uppercase">Listening</span>
+          </button>
+          <div className="flex items-end gap-[3px]">
+            {[2, 4, 7, 5, 3].map((h, i) => (
+              <div
+                key={i}
+                className={`w-[2px] rounded-full ${i === 2 ? 'bg-tertiary shadow-[0_0_8px_rgba(255,221,121,0.4)]' : i === 1 || i === 3 ? 'bg-tertiary/50' : 'bg-tertiary/30'}`}
+                style={{ height: `${h * 3}px` }}
+              />
+            ))}
+          </div>
+          <button className="flex items-center gap-2 text-tertiary">
+            <span className="material-symbols-outlined !text-[18px]">graphic_eq</span>
+            <span className="text-[9px] font-bold tracking-widest uppercase">Analyzer Active</span>
+          </button>
+        </div>
+      </footer>
+
+      {/* ── Right Action Strip ──────────────────────────────────────── */}
+      <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-50">
+        {[
+          { icon: 'bolt',    hover: 'hover:bg-white hover:text-black'     },
+          { icon: 'close',   hover: 'hover:bg-error hover:text-white'     },
+          { icon: 'refresh', hover: 'hover:bg-white hover:text-black'     },
+        ].map(({ icon, hover }) => (
+          <div
+            key={icon}
+            className={`apple-glass p-2.5 rounded-full border border-white/10 cursor-pointer
+                         transition-all group shadow-xl ${hover}`}
+          >
+            <span className="material-symbols-outlined !text-[18px] group-hover:scale-110 transition-transform">
+              {icon}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

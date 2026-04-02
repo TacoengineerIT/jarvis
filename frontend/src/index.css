@@ -202,3 +202,34 @@
   border-color: rgba(238, 125, 119, 0.5);
   box-shadow: 0 0 10px rgba(238, 125, 119, 0.45);
 }
+
+/* ── Floating Card (dark solid glass) ───────────────────────────── */
+.floating-card {
+  background: rgba(18, 18, 18, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Glass Floating (lighter, for upload zones) ──────────────────── */
+.glass-floating {
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Neon text shadows ───────────────────────────────────────────── */
+.neon-shadow {
+  text-shadow: 0 0 12px rgba(255, 221, 121, 0.4);
+}
+
+.red-neon-glow {
+  text-shadow: 0 0 20px rgba(238, 125, 119, 0.6), 0 0 40px rgba(238, 125, 119, 0.3);
+}
+
+/* ── Mercury Orb (Intelligence page) ────────────────────────────── */
+.mercury-orb {
+  background: radial-gradient(circle at 30% 30%, #ffffff 0%, #c6c6c8 45%, #2a2a2a 100%);
+  box-shadow: 0 0 80px rgba(255, 255, 255, 0.1);
+}
