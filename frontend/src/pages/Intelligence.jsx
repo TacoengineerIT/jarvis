@@ -18,7 +18,12 @@ export default function Intelligence() {
   const [inputVal, setInputVal] = useState('')
 
   const handleSend = () => {
-    if (!inputVal.trim() || loading) return
+    console.log('[handleSend] called, inputVal:', inputVal, '| loading:', loading)
+    if (!inputVal.trim() || loading) {
+      console.warn('[handleSend] blocked — empty or loading')
+      return
+    }
+    console.log('[handleSend] Sending:', inputVal.trim())
     sendInput(inputVal.trim())
     setInputVal('')
   }
@@ -139,6 +144,15 @@ export default function Intelligence() {
             </div>
           </div>
         </div>
+
+        {/* Last response bubble */}
+        {state.response && (
+          <div className="absolute bottom-28 left-1/2 -translate-x-1/2 w-full max-w-lg px-4 z-40">
+            <div className="glass-island rounded-2xl px-5 py-3 text-sm text-zinc-200 leading-relaxed text-center">
+              {state.response}
+            </div>
+          </div>
+        )}
 
         {/* Bottom Transcription Dock */}
         <div className="fixed bottom-0 left-20 right-0 z-50 flex justify-center pb-8">

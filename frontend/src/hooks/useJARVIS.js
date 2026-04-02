@@ -48,9 +48,11 @@ export function useJARVIS() {
 
   const sendInput = useCallback((text) => {
     text = text?.trim()
+    console.log('[sendInput] called with:', text)
     if (!text) return
     setLoading(true)
     setState(prev => ({ ...prev, user_input: text, jarvis_state: 'PROCESSING' }))
+    console.log('[sendInput] firing POST /api/input')
 
     fetch(`${API_URL}/api/input`, {
       method: 'POST',
@@ -59,7 +61,9 @@ export function useJARVIS() {
     })
       .then(r => r.json())
       .then(data => {
+        console.log('[sendInput] response:', data)
         if (data.error) {
+          console.error('[sendInput] API error:', data.error)
           setError(data.error)
         } else {
           setState(prev => ({
