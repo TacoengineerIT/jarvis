@@ -4,6 +4,7 @@ Listens for "hey jarvis" to transition from passive to active listening.
 Optional module: if openwakeword is not installed, falls back to always-active.
 """
 import logging
+import time
 import numpy as np
 from typing import Optional
 
@@ -49,10 +50,12 @@ class WakeWordDetector:
             detected = detector.process_chunk(audio_int16)
     """
 
-    def __init__(self, threshold: float = WAKEWORD_THRESHOLD):
+    def __init__(self, threshold: float = WAKEWORD_THRESHOLD, cooldown_seconds: float = 2.0):
         self.threshold = threshold
+        self.cooldown_seconds = cooldown_seconds
         self._available = _load_oww()
         self._buffer = np.array([], dtype=np.int16)
+        self._last_detected_time: float = 0.0
 
     @property
     def available(self) -> bool:
@@ -72,6 +75,12 @@ class WakeWordDetector:
         if not self._available or _oww_model is None:
             return False
 
+        # Cooldown guard: ignore chunks until cooldown expires
+        now = time.time()
+        if now - self._last_detected_time < self.cooldown_seconds:
+            logger.debug("[COOLDOWN] Ignorando chunk (cooldown attivo)")
+            return False
+
         # Buffer chunks until we have enough for oww (1280 samples)
         self._buffer = np.concatenate([self._buffer, chunk])
 
@@ -86,7 +95,12 @@ class WakeWordDetector:
                 if score >= self.threshold:
                     logger.info(f"[WAKEWORD] Rilevato '{model_name}' (score={score:.3f})")
                     print(f"[WAKEWORD] Hey JARVIS rilevato! (score={score:.3f})")
+                    self._last_detected_time = time.time()
+                    logger.info(f"[COOLDOWN] Attivato (reset tra {self.cooldown_seconds}s)")
                     detected = True
+                    break  # One detection per chunk — stop inner loop
+            if detected:
+                break  # Stop outer loop immediately after first detection
 
         return detected
 

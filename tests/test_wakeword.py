@@ -2,6 +2,7 @@
 Tests for jarvis_wakeword.py — Wake word detection.
 CRITICAL: openwakeword is fully mocked. No real model is loaded.
 """
+import time
 import numpy as np
 import pytest
 from unittest.mock import patch, MagicMock
@@ -104,6 +105,51 @@ class TestWakeWordDetectorAvailable:
 
         detector.reset()
         assert len(detector._buffer) == 0
+
+    def test_cooldown_prevents_duplicate_detection(self):
+        """After detection, cooldown should block immediate re-detection."""
+        detector, mock_model = self._make_detector_with_mock_model()
+        mock_model.predict.return_value = {"hey_jarvis": 0.85}
+        detector.cooldown_seconds = 2.0
+
+        chunk = np.zeros(1280, dtype=np.int16)
+
+        # First detection should succeed
+        result1 = detector.process_chunk(chunk)
+        assert result1 is True
+
+        # Immediate second detection should be blocked by cooldown
+        result2 = detector.process_chunk(chunk)
+        assert result2 is False
+
+    def test_cooldown_expires_after_time(self):
+        """After cooldown expires, detection should succeed again."""
+        detector, mock_model = self._make_detector_with_mock_model()
+        mock_model.predict.return_value = {"hey_jarvis": 0.85}
+        # Use a very short cooldown so test is fast
+        detector.cooldown_seconds = 0.05
+
+        chunk = np.zeros(1280, dtype=np.int16)
+
+        result1 = detector.process_chunk(chunk)
+        assert result1 is True
+
+        # Wait for cooldown to expire
+        time.sleep(0.1)
+
+        result2 = detector.process_chunk(chunk)
+        assert result2 is True
+
+    def test_only_one_detection_per_chunk_even_with_multiple_frames(self):
+        """A single process_chunk call should trigger at most one detection."""
+        detector, mock_model = self._make_detector_with_mock_model()
+        mock_model.predict.return_value = {"hey_jarvis": 0.85}
+
+        # Feed 3 full oww frames in one call — should only detect once
+        chunk = np.zeros(1280 * 3, dtype=np.int16)
+        result = detector.process_chunk(chunk)
+        assert result is True
+        assert mock_model.predict.call_count == 1  # Stopped after first detection
 
 
 class TestIsAvailable:

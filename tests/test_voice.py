@@ -122,6 +122,37 @@ class TestDucking:
             jv._music_loaded = original
 
 
+class TestMicAvailabilityCheck:
+
+    def test_mic_available_returns_true_with_input_devices(self):
+        """_check_mic_available() returns True when input devices exist."""
+        import main as m
+        mock_sd = MagicMock()
+        mock_sd.query_devices.return_value = [
+            {"max_input_channels": 2, "name": "Fake Mic"},
+        ]
+        with patch.dict("sys.modules", {"sounddevice": mock_sd}):
+            assert m._check_mic_available() is True
+
+    def test_mic_unavailable_returns_false_when_no_input(self):
+        """_check_mic_available() returns False when no input channels exist."""
+        import main as m
+        mock_sd = MagicMock()
+        mock_sd.query_devices.return_value = [
+            {"max_input_channels": 0, "name": "Output Only"},
+        ]
+        with patch.dict("sys.modules", {"sounddevice": mock_sd}):
+            assert m._check_mic_available() is False
+
+    def test_mic_check_returns_false_on_exception(self):
+        """_check_mic_available() returns False when sounddevice raises."""
+        import main as m
+        mock_sd = MagicMock()
+        mock_sd.query_devices.side_effect = OSError("no audio hardware")
+        with patch.dict("sys.modules", {"sounddevice": mock_sd}):
+            assert m._check_mic_available() is False
+
+
 class TestAudioCacheHash:
 
     def test_hash_deterministic(self):
