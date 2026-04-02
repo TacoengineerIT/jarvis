@@ -17,6 +17,21 @@ def build_response(message, should_end_session=False):
 def alexa_endpoint():
     try:
         data = request.json
+        request_type = data.get('request', {}).get('type', '')
+
+        # LaunchRequest — "Alexa, apri jarvis"
+        if request_type == 'LaunchRequest':
+            print("[ALEXA] LaunchRequest ricevuto")
+            return jsonify(build_response(
+                "Buonasera Sir. Sono JARVIS. Come posso assisterla?",
+                should_end_session=False
+            ))
+
+        # SessionEndedRequest
+        if request_type == 'SessionEndedRequest':
+            print("[ALEXA] Sessione chiusa")
+            return jsonify(build_response("Arrivederci Sir.", should_end_session=True))
+
         intent_name = data.get('request', {}).get('intent', {}).get('name')
         slots = data.get('request', {}).get('intent', {}).get('slots', {})
         

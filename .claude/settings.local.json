@@ -16,7 +16,31 @@
       "Bash(/c/Users/A1600apulia/Desktop/jarvis_scuola/venv/Scripts/python.exe -m py_compile survival_recipes.py)",
       "Bash(/c/Users/A1600apulia/Desktop/jarvis_scuola/venv/Scripts/python.exe -m py_compile memory_manager.py)",
       "Bash(/c/Users/A1600apulia/Desktop/jarvis_scuola/venv/Scripts/python.exe -m py_compile jarvis_brain.py)",
-      "Bash(/c/Users/A1600apulia/Desktop/jarvis_scuola/venv/Scripts/python.exe -m py_compile jarvis_voice.py)"
+      "Bash(/c/Users/A1600apulia/Desktop/jarvis_scuola/venv/Scripts/python.exe -m py_compile jarvis_voice.py)",
+      "Bash(ls C:UsersA1600apuliaDesktopjarvis_scuola*.py)",
+      "Bash(dir /b \"C:\\\\Users\\\\A1600apulia\\\\Desktop\\\\jarvis_scuola\\\\*.py\")",
+      "Bash(ls:*)",
+      "Bash(python:*)",
+      "Bash(./venv/Scripts/pip.exe install:*)",
+      "Bash(C:/Users/A1600apulia/Desktop/jarvis_scuola/venv/Scripts/python.exe -m pip install pytest pytest-cov pytest-mock)",
+      "Bash(C:/Users/A1600apulia/Desktop/jarvis_scuola/venv/Scripts/python.exe -m pytest tests/ -v --tb=short)",
+      "Bash(C:/Users/A1600apulia/Desktop/jarvis_scuola/venv/Scripts/python.exe -c \":*)",
+      "Bash(./venv/Scripts/pip install:*)",
+      "Bash(venv/Scripts/python.exe -m pip install faster-whisper)",
+      "Bash(venv/Scripts/pip install:*)",
+      "Bash(venv/bin/pip install:*)",
+      "Bash(python3 -c \"import sys; print\\(sys.executable\\)\")",
+      "Bash(cmd //c \"venv\\\\\\\\Scripts\\\\\\\\pip.exe install cryptography webrtcvad anthropic\")",
+      "Bash(venv/Scripts/python.exe -m pip install cryptography webrtcvad anthropic)",
+      "Bash(venv/Scripts/python.exe -m pip install cryptography anthropic)",
+      "Bash(venv/Scripts/python.exe:*)",
+      "Bash(taskkill /F /IM python.exe)",
+      "Bash(npm --version)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(git add:*)",
+      "Bash(git rm:*)",
+      "Bash(git commit -m ':*)"
     ]
   }
 }
