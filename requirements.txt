@@ -52,3 +52,8 @@ thefuzz>=0.20.0
 python-Levenshtein>=0.21.0
 requests>=2.31.0
 feedparser>=6.0.11           # RSS parsing for news scraper
+
+# ── Google Calendar (optional) ────────────────────────────────────
+google-api-python-client>=2.100.0   # Google Calendar API
+google-auth-oauthlib>=1.1.0         # OAuth2 flow
+google-auth-httplib2>=0.1.1         # HTTP transport

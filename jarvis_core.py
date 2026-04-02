@@ -42,6 +42,7 @@ SONNET_INTENTS = {
     "financial_advice", "planning", "empathy",
     "complex_reasoning", "storytelling",
     "news_briefing", "market_analysis", "geopolitical_analysis",
+    "schedule_query", "break_recommendation", "calendar_check",
 }
 
 # Keyword → intent mapping (Italian + English)
@@ -56,6 +57,9 @@ INTENT_PATTERNS: list[tuple[list[str], str]] = [
     (["apri", "avvia", "lancia", "open"],         "open_app"),
     (["che ore", "che ora", "orario"],            "what_time"),
     (["che giorno", "data di oggi"],              "what_date"),
+    (["cosa ho oggi", "agenda", "programma oggi", "schedule", "calendario"], "calendar_check"),
+    (["pausa", "riposare", "break", "stanco", "stanchezza"],               "break_recommendation"),
+    (["slot libero", "ore libere", "quando sono libero", "free time"],     "schedule_query"),
     (["notizie", "news", "briefing", "mattutino"], "news_briefing"),
     (["mercati", "borsa", "azioni", "investiment", "market"], "market_analysis"),
     (["geopolitic", "tensione mondiale", "conflitto", "guerra"], "geopolitical_analysis"),
@@ -199,12 +203,19 @@ class JarvisCore:
         if intent in ("news_briefing", "market_analysis", "geopolitical_analysis"):
             briefing_ctx = self._get_briefing_context()
 
+        # Schedule context (injected for calendar/break/mood intents)
+        schedule_ctx = ""
+        if intent in ("calendar_check", "break_recommendation", "schedule_query",
+                      "mood_check", "planning"):
+            schedule_ctx = self._get_schedule_context(mood)
+
         system = (
             f"{JARVIS_PERSONA}\n\n"
             f"=== MEMORIA RECENTE ===\n{memory_ctx}\n\n"
             f"=== STATO ATTUALE ===\n"
             f"Umore ora: {mood['label']} {mood['emoji']} (score={mood['score']})\n"
             f"{mood_summary}"
+            + (f"\n\n=== SCHEDULE OGGI ===\n{schedule_ctx}" if schedule_ctx else "")
             + (f"\n\n=== BRIEFING GEOPOLITICO/MERCATI (oggi) ===\n{briefing_ctx}" if briefing_ctx else "")
         )
         try:
@@ -222,6 +233,38 @@ class JarvisCore:
     # ------------------------------------------------------------------ #
     # Morning briefing context                                             #
     # ------------------------------------------------------------------ #
+
+    def _get_schedule_context(self, mood: dict) -> str:
+        """Return compact schedule summary for Sonnet context."""
+        try:
+            from jarvis_calendar import CalendarManager
+            from jarvis_schedule_optimizer import ScheduleOptimizer
+            cal = CalendarManager(memory=self.memory)
+            opt = ScheduleOptimizer(calendar_manager=cal, memory=self.memory)
+            ctx = cal.get_schedule_context()
+            stress = opt.predict_stress_level()
+
+            lines = [
+                f"Eventi oggi: {ctx['event_count']}",
+                f"Occupato ora: {'sì — ' + ctx['current_event'] if ctx['is_busy_now'] else 'no'}",
+                f"Ore più occupate: {ctx['busiest_hours']}",
+                f"Urgenza: {ctx['urgency']}",
+                f"Stress previsto: {stress['level']} (score {stress['score']})",
+            ]
+            if ctx.get("next_important"):
+                lines.append(f"Prossimo evento importante: {ctx['next_important']}")
+            if mood["label"] in ("stressed", "anxious") and stress["level"] in ("HIGH", "EXTREME"):
+                lines.append("→ Utente stressato E calendario pieno: suggerisci pausa urgente.")
+            elif ctx["is_busy_now"]:
+                lines.append("→ Utente occupato: risposte brevi e concrete.")
+            free = ctx.get("free_slots", [])
+            if free:
+                slot = free[0]
+                lines.append(f"Prossimo slot libero: {slot['start']} ({slot['duration_minutes']} min)")
+            return "\n".join(lines)
+        except Exception as e:
+            logger.debug("Schedule context unavailable: %s", e)
+            return ""
 
     def _get_briefing_context(self) -> str:
         """Return a compact text from today's morning briefing for Sonnet context."""

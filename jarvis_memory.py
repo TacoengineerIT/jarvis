@@ -167,6 +167,53 @@ class JarvisMemory:
                     actionable_items TEXT,
                     confidence       REAL
                 );
+
+                CREATE TABLE IF NOT EXISTS calendar_events (
+                    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_id    TEXT UNIQUE,
+                    title       TEXT,
+                    description TEXT,
+                    start_time  DATETIME,
+                    end_time    DATETIME,
+                    location    TEXT,
+                    event_type  TEXT,
+                    importance  INTEGER DEFAULT 3,
+                    synced_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    is_all_day  BOOLEAN DEFAULT 0
+                );
+
+                CREATE TABLE IF NOT EXISTS schedule_patterns (
+                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    pattern_type TEXT,
+                    start_time   TIME,
+                    end_time     TIME,
+                    days_of_week TEXT,
+                    frequency    INTEGER,
+                    confidence   REAL,
+                    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE IF NOT EXISTS break_history (
+                    id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+                    scheduled_time     DATETIME,
+                    actual_break_time  DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    duration_minutes   INTEGER,
+                    break_type         TEXT,
+                    mood_before        REAL,
+                    mood_after         REAL,
+                    effectiveness      REAL,
+                    created_at         DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE IF NOT EXISTS event_reminders (
+                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_id      TEXT,
+                    reminder_time DATETIME,
+                    reminder_type TEXT,
+                    message       TEXT,
+                    notified      BOOLEAN DEFAULT 0,
+                    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
             """)
 
     def _conn(self) -> sqlite3.Connection:
@@ -383,6 +430,117 @@ class JarvisMemory:
                 "relevance_score": row["relevance_score"],
             })
         return result
+
+    # ------------------------------------------------------------------ #
+    # Calendar                                                             #
+    # ------------------------------------------------------------------ #
+
+    def save_calendar_events(self, events: list[dict]):
+        """Upsert calendar events by event_id."""
+        with self._conn() as conn:
+            for ev in events:
+                conn.execute(
+                    """INSERT OR REPLACE INTO calendar_events
+                       (event_id, title, description, start_time, end_time,
+                        location, event_type, importance, is_all_day)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        ev.get("event_id", ""), ev.get("title", ""),
+                        ev.get("description", ""), ev.get("start_time", ""),
+                        ev.get("end_time", ""),   ev.get("location", ""),
+                        ev.get("event_type", "work"), ev.get("importance", 3),
+                        1 if ev.get("is_all_day") else 0,
+                    ),
+                )
+
+    def get_events_for_date(self, date_str: str) -> list[dict]:
+        """Return all events that overlap with the given date (YYYY-MM-DD)."""
+        with self._conn() as conn:
+            rows = conn.execute(
+                """SELECT * FROM calendar_events
+                   WHERE start_time LIKE ? OR start_time LIKE ?
+                   ORDER BY start_time""",
+                (f"{date_str}%", f"{date_str} %"),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_events_in_range(self, start: str, end: str) -> list[dict]:
+        """Return events whose start_time falls in [start, end]."""
+        with self._conn() as conn:
+            rows = conn.execute(
+                """SELECT * FROM calendar_events
+                   WHERE start_time >= ? AND start_time <= ?
+                   ORDER BY start_time""",
+                (start, end),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def delete_calendar_event(self, event_id: str):
+        with self._conn() as conn:
+            conn.execute(
+                "DELETE FROM calendar_events WHERE event_id = ?", (event_id,)
+            )
+
+    def save_break(
+        self,
+        break_type: str,
+        duration_minutes: int,
+        effectiveness: float = 0.5,
+        mood_before: float = 0.5,
+        mood_after: float = 0.5,
+        scheduled_time: Optional[str] = None,
+    ):
+        now = datetime.now().isoformat()
+        with self._conn() as conn:
+            conn.execute(
+                """INSERT INTO break_history
+                   (scheduled_time, actual_break_time, duration_minutes,
+                    break_type, mood_before, mood_after, effectiveness)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (scheduled_time or now, now, duration_minutes,
+                 break_type, mood_before, mood_after, effectiveness),
+            )
+
+    def get_break_history(self, limit: int = 20) -> list[dict]:
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT * FROM break_history ORDER BY created_at DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def save_event_reminder(
+        self,
+        event_id: str,
+        reminder_time: str,
+        message: str,
+        reminder_type: str = "advance",
+    ):
+        with self._conn() as conn:
+            conn.execute(
+                """INSERT INTO event_reminders
+                   (event_id, reminder_time, reminder_type, message)
+                   VALUES (?, ?, ?, ?)""",
+                (event_id, reminder_time, reminder_type, message),
+            )
+
+    def get_pending_reminders(self, before: str) -> list[dict]:
+        """Return unnotified reminders due before `before` (ISO datetime)."""
+        with self._conn() as conn:
+            rows = conn.execute(
+                """SELECT * FROM event_reminders
+                   WHERE notified = 0 AND reminder_time <= ?
+                   ORDER BY reminder_time""",
+                (before,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def mark_reminder_notified(self, reminder_id: int):
+        with self._conn() as conn:
+            conn.execute(
+                "UPDATE event_reminders SET notified = 1 WHERE id = ?",
+                (reminder_id,),
+            )
 
     # ------------------------------------------------------------------ #
     # Stats                                                                #
