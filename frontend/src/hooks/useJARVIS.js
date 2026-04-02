@@ -1,174 +1,147 @@
 /**
- * useJARVIS — React hook for real-time JARVIS WebSocket connection.
- *
- * Returns:
- *   state       — full JARVIS state object (mood, user_input, response, ...)
- *   connected   — WebSocket connected?
- *   loading     — processing a command?
- *   error       — last error string or null
- *   sendInput   — (text: string) => void
- *   reconnect   — () => void  force reconnect
+ * useJARVIS.js — HTTP Polling Only (NO WebSocket)
+ * Simple, reliable, works on Windows
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:5000'
+const API_URL = 'http://localhost:5000'
 
 const DEFAULT_STATE = {
-  jarvis_state:    'LISTENING',
-  mood:            'neutral',
-  mood_score:      5.0,
-  mood_trend:      'stable',
-  user_input:      '',
-  response:        '',
-  timestamp:       '',
+  jarvis_state: 'LISTENING',
+  mood: '😐',
+  mood_score: 5.0,
+  user_input: '',
+  response: '',
+  timestamp: new Date().toISOString(),
   last_5_commands: [],
-  api_cost_today:  0.0,
-  today_spent:     0.0,
-  next_event:      null,
-  briefing:        'Connessione al sistema in corso...',
-  budget_alerts:   [],
+  api_cost_today: 0.0,
+  today_spent: 0.0,
+  next_event: null,
+  briefing: '',
+  budget_alerts: [],
 }
 
 export function useJARVIS() {
-  const [state, setState]       = useState(DEFAULT_STATE)
+  const [state, setState] = useState(DEFAULT_STATE)
   const [connected, setConnected] = useState(false)
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  const wsRef       = useRef(null)
-  const retryTimer  = useRef(null)
-  const retryCount  = useRef(0)
-  const MAX_RETRIES = 10
-
-  const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return
-
-    try {
-      const ws = new WebSocket(WS_URL)
-      wsRef.current = ws
-
-      ws.onopen = () => {
-        setConnected(true)
-        setError(null)
-        retryCount.current = 0
-        console.info('[JARVIS WS] Connected')
-      }
-
-      ws.onmessage = (evt) => {
-        try {
-          const msg = JSON.parse(evt.data)
-          if (msg.type === 'state') {
-            setState(prev => ({ ...prev, ...msg }))
-            if (msg.jarvis_state === 'LISTENING') setLoading(false)
-            if (msg.jarvis_state === 'PROCESSING') setLoading(true)
-          }
-        } catch {
-          // ignore malformed messages
-        }
-      }
-
-      ws.onclose = () => {
-        setConnected(false)
-        setLoading(false)
-        if (retryCount.current < MAX_RETRIES) {
-          const delay = Math.min(1000 * 2 ** retryCount.current, 30000)
-          retryCount.current += 1
-          retryTimer.current = setTimeout(connect, delay)
-          console.warn(`[JARVIS WS] Reconnecting in ${delay}ms (attempt ${retryCount.current})`)
-        } else {
-          setError('Connessione persa. Riavvia il server JARVIS.')
-        }
-      }
-
-      ws.onerror = () => {
-        setError('Errore WebSocket — server non raggiungibile')
-      }
-    } catch (e) {
-      setError(`Impossibile connettersi: ${e.message}`)
-    }
-  }, [])
-
-  // Connect on mount, cleanup on unmount
+  // HTTP Polling — aggiorna stato ogni 500ms
   useEffect(() => {
-    connect()
-    return () => {
-      clearTimeout(retryTimer.current)
-      wsRef.current?.close()
-    }
-  }, [connect])
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/state`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        })
 
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+        const data = await res.json()
+        setState(prev => ({
+          ...prev,
+          ...data,
+        }))
+
+        if (!connected) {
+          setConnected(true)
+          setError(null)
+          console.log('✅ Connected to JARVIS (HTTP polling)')
+        }
+      } catch (err) {
+        console.error('❌ Poll error:', err)
+        setConnected(false)
+        setError(err.message)
+      }
+    }, 500)
+
+    return () => clearInterval(pollInterval)
+  }, [connected])
+
+  // Invia input al backend
   const sendInput = useCallback((text) => {
     text = text?.trim()
     if (!text) return
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: 'input', text }))
-      setLoading(true)
-      setState(prev => ({ ...prev, user_input: text, jarvis_state: 'PROCESSING' }))
-    } else {
-      // Fallback: HTTP POST
-      fetch('/api/input', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ text }),
-      }).catch(e => setError(`HTTP fallback failed: ${e.message}`))
-      setLoading(true)
-    }
+
+    setLoading(true)
+    setState(prev => ({
+      ...prev,
+      user_input: text,
+      jarvis_state: 'PROCESSING',
+    }))
+
+    fetch(`${API_URL}/api/input`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    })
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
+      .then(data => {
+        if (data.error) {
+          setError(data.error)
+          setLoading(false)
+        } else {
+          setState(prev => ({
+            ...prev,
+            response: data.response,
+            mood: data.mood || prev.mood,
+            mood_score: data.mood_score || prev.mood_score,
+            jarvis_state: data.jarvis_state || 'LISTENING',
+          }))
+          setError(null)
+          setLoading(false)
+        }
+      })
+      .catch(err => {
+        console.error('❌ Send error:', err)
+        setError(err.message)
+        setLoading(false)
+      })
   }, [])
 
-  const reconnect = useCallback(() => {
-    retryCount.current = 0
-    clearTimeout(retryTimer.current)
-    wsRef.current?.close()
-    connect()
-  }, [connect])
-
-  return { state, connected, loading, error, sendInput, reconnect }
+  return { state, connected, loading, error, sendInput }
 }
 
-// ── Helpers (exported for use in components) ──────────────────────
-
-export function getStateEmoji(jarvisState) {
+// Helper functions
+export const getStateEmoji = (state) => {
   const map = {
-    LISTENING:  '💤',
-    ACTIVE:     '👂',
-    RECORDING:  '🎙️',
-    PROCESSING: '⚙️',
-    SPEAKING:   '🔊',
-    COOLDOWN:   '⏱️',
+    'LISTENING':  '💤',
+    'ACTIVE':     '🔴',
+    'RECORDING':  '🎙️',
+    'PROCESSING': '⚙️',
+    'SPEAKING':   '🔊',
+    'COOLDOWN':   '⏱️',
+    'ERROR':      '❌',
   }
-  return map[jarvisState] || '❓'
+  return map[state] || '❓'
 }
 
-export function getStateLabel(jarvisState) {
-  const map = {
-    LISTENING:  'In ascolto',
-    ACTIVE:     'Attivo',
-    RECORDING:  'Registrazione',
-    PROCESSING: 'Elaborazione',
-    SPEAKING:   'Risposta',
-    COOLDOWN:   'Attesa',
-  }
-  return map[jarvisState] || jarvisState
-}
+export const getMoodEmoji = (mood) => {
+  // Se mood è già un emoji, ritorna
+  if (mood && mood.length === 2) return mood
 
-export function getMoodEmoji(mood) {
+  // Altrimenti mappa dal nome
   const map = {
-    happy:     '😊',
-    excited:   '🤩',
-    calm:      '😌',
-    neutral:   '😐',
-    tired:     '😴',
-    anxious:   '😰',
-    stressed:  '😤',
-    sad:       '😢',
-    angry:     '😠',
-    depressed: '😞',
+    'happy':     '😊',
+    'excited':   '🤩',
+    'calm':      '😌',
+    'neutral':   '😐',
+    'tired':     '😴',
+    'anxious':   '😰',
+    'stressed':  '😤',
+    'sad':       '😢',
+    'angry':     '😠',
+    'depressed': '😞',
   }
   return map[mood] || '😐'
 }
 
-export function getMoodColor(mood) {
+export const getMoodColor = (mood) => {
   const map = {
     happy:     'text-tertiary',
     excited:   'text-tertiary',
@@ -182,4 +155,15 @@ export function getMoodColor(mood) {
     depressed: 'text-error-dim',
   }
   return map[mood] || 'text-on-surface-variant'
+}
+
+export const getStateLabel = (state) => {
+  const map = {
+    'LISTENING':  'In ascolto',
+    'RECORDING':  'Registrazione',
+    'PROCESSING': 'Elaborazione',
+    'SPEAKING':   'Risposta',
+    'COOLDOWN':   'Attesa',
+  }
+  return map[state] || state
 }
