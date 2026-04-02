@@ -17,7 +17,14 @@ const DEFAULT_STATE = {
   next_event: null,
   briefing: '',
   budget_alerts: [],
-  error: null
+  error: null,
+  // Financial fields
+  portfolio_balance: 2000.0,
+  rent_gap: 110.0,
+  daily_burn: 42.50,
+  runway: 14,
+  monthly_budget: 2000.0,
+  monthly_spent: 960.0,
 }
 
 export function useJARVIS() {
@@ -26,7 +33,7 @@ export function useJARVIS() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // HTTP Polling every 500ms
+  // HTTP Polling every 500ms — syncs full server state
   useEffect(() => {
     const poll = setInterval(async () => {
       try {
@@ -34,25 +41,21 @@ export function useJARVIS() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
         setState(data)
-        if (!connected) {
-          setConnected(true)
-          setError(null)
-        }
+        setConnected(true)
+        setError(null)
       } catch (err) {
         setConnected(false)
         setError(err.message)
       }
     }, 500)
     return () => clearInterval(poll)
-  }, [connected])
+  }, [])
 
   const sendInput = useCallback((text) => {
     text = text?.trim()
-    console.log('[sendInput] called with:', text)
     if (!text) return
     setLoading(true)
     setState(prev => ({ ...prev, user_input: text, jarvis_state: 'PROCESSING' }))
-    console.log('[sendInput] firing POST /api/input')
 
     fetch(`${API_URL}/api/input`, {
       method: 'POST',
@@ -61,19 +64,11 @@ export function useJARVIS() {
     })
       .then(r => r.json())
       .then(data => {
-        console.log('[sendInput] response:', data)
         if (data.error) {
-          console.error('[sendInput] API error:', data.error)
           setError(data.error)
         } else {
-          setState(prev => ({
-            ...prev,
-            response: data.response,
-            mood: data.mood,
-            mood_score: data.mood_score,
-            jarvis_state: 'LISTENING',
-            conversation_history: data.conversation_history,
-          }))
+          // Merge all returned fields immediately (don't wait for next poll)
+          setState(prev => ({ ...prev, ...data }))
           setError(null)
         }
         setLoading(false)

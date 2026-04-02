@@ -18,12 +18,7 @@ export default function Intelligence() {
   const [inputVal, setInputVal] = useState('')
 
   const handleSend = () => {
-    console.log('[handleSend] called, inputVal:', inputVal, '| loading:', loading)
-    if (!inputVal.trim() || loading) {
-      console.warn('[handleSend] blocked — empty or loading')
-      return
-    }
-    console.log('[handleSend] Sending:', inputVal.trim())
+    if (!inputVal.trim() || loading) return
     sendInput(inputVal.trim())
     setInputVal('')
   }
@@ -89,12 +84,14 @@ export default function Intelligence() {
           <div>
             <p className="uppercase text-[10px] text-zinc-500 tracking-widest mb-1">Portfolio Balance</p>
             <h2 className="text-4xl font-bold text-white tracking-tight neon-shadow">
-              €{(2000 - state.today_spent).toFixed(2)}
+              €{(state.portfolio_balance ?? 2000).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </h2>
           </div>
           <div className="text-right">
             <p className="uppercase text-[10px] text-zinc-500 tracking-widest mb-1">Rent Gap</p>
-            <h2 className="text-2xl font-bold text-tertiary tracking-tight neon-shadow">€110</h2>
+            <h2 className={`text-2xl font-bold tracking-tight neon-shadow ${state.rent_gap > 0 ? 'text-tertiary' : 'text-green-400'}`}>
+              €{(state.rent_gap ?? 110).toFixed(2)}
+            </h2>
           </div>
         </div>
 

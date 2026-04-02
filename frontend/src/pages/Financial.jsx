@@ -28,10 +28,12 @@ export default function Financial() {
     setInputVal('')
   }
 
-  const rentGap   = 110
-  const dailyBurn = 42.50
-  const runway    = 14
-  const progress  = 88
+  const rentGap       = state.rent_gap ?? 110
+  const dailyBurn     = state.daily_burn ?? 42.50
+  const runway        = state.runway ?? 14
+  const monthlyBudget = state.monthly_budget ?? 2000
+  const monthlySpent  = state.monthly_spent ?? 960
+  const progress      = Math.min(Math.round(((monthlyBudget - rentGap) / monthlyBudget) * 100), 100)
 
   return (
     <div className="bg-black min-h-screen text-on-surface selection:bg-tertiary/30 overflow-x-hidden">
@@ -97,7 +99,9 @@ export default function Financial() {
                   </h1>
                 </div>
                 <div className="text-right">
-                  <span className="text-error font-bold text-7xl red-neon-glow">€{rentGap}</span>
+                  <span className={`font-bold text-7xl ${rentGap > 0 ? 'red-neon-glow text-error' : 'text-green-400'}`}>
+                  €{rentGap.toFixed(2)}
+                </span>
                   <p className="uppercase text-[10px] text-error/80 mt-2 font-bold tracking-widest">
                     Deficit Remaining
                   </p>
@@ -140,7 +144,7 @@ export default function Financial() {
                 <span className="uppercase text-[10px] text-zinc-500 font-bold tracking-widest">
                   Daily Burn Rate
                 </span>
-                <h3 className="text-5xl font-bold text-white mt-2">€{dailyBurn.toFixed(2)}</h3>
+                <h3 className="text-5xl font-bold text-white mt-2 transition-all duration-500">€{dailyBurn.toFixed(2)}</h3>
               </div>
               <div className="flex items-center justify-between mt-4">
                 <div className="flex items-center gap-2 px-3 py-1 bg-green-500/10
@@ -168,7 +172,7 @@ export default function Financial() {
                 <span className="uppercase text-[10px] text-zinc-500 font-bold tracking-widest">
                   Runway Forecast
                 </span>
-                <h3 className="text-5xl font-bold text-white mt-2">
+                <h3 className="text-5xl font-bold text-white mt-2 transition-all duration-500">
                   {runway}{' '}
                   <span className="text-xl text-zinc-500">Days</span>
                 </h3>
