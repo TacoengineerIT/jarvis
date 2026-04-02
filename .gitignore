@@ -51,6 +51,9 @@ chroma_db/
 api_key.txt
 apikey.txt
 secrets.json
+memory.key
+memory.db
+cache/
 
 # Temporary files
 *.tmp
@@ -106,3 +109,15 @@ config/home_assistant.json
 # Whisper/CTranslate2 model cache (large files)
 ~/.cache/whisper/
 ~/.cache/huggingface/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# JARVIS v4.0 secrets
+config.json
+memory.db
+memory.key
+logs/
+*.db
+*.key
