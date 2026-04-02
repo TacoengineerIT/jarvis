@@ -4,12 +4,20 @@ import { useJARVIS, getStateEmoji, getMoodEmoji, getStateLabel } from './hooks/u
 export default function App() {
   const jarvis = useJARVIS()
   const [inputText, setInputText] = useState('')
+  const [scrollY, setScrollY] = useState(0)
   const messagesEndRef = useRef(null)
 
   // Auto-scroll to latest message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [jarvis.state.conversation_history])
+
+  // Track scroll for dynamic saturation
+  useEffect(() => {
+    const handleScroll = (e) => setScrollY(e.target.scrollTop || 0)
+    window.addEventListener('scroll', handleScroll, true)
+    return () => window.removeEventListener('scroll', handleScroll, true)
+  }, [])
 
   // Handle text input (Enter key)
   const handleKeyPress = (e) => {
@@ -54,8 +62,13 @@ export default function App() {
     }
   }
 
+  const saturation = Math.max(60, 100 - scrollY * 0.3)
+
   return (
-    <div className="w-screen h-screen bg-black text-white flex flex-col overflow-hidden">
+    <div
+      className="w-screen h-screen bg-black text-white flex flex-col overflow-hidden"
+      style={{ filter: `saturate(${saturation}%)` }}
+    >
       {/* Connection Status */}
       {!jarvis.connected && (
         <div className="bg-red-900/80 text-red-100 px-4 py-2 text-center text-sm flex-shrink-0">

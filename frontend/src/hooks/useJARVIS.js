@@ -14,6 +14,8 @@ const DEFAULT_STATE = {
   api_cost_today: 0.0,
   today_spent: 0.0,
   next_event: null,
+  briefing: '',
+  budget_alerts: [],
   error: null
 }
 
