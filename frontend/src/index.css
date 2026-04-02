@@ -177,3 +177,28 @@
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
 }
+
+/* ── Apple Glass ─────────────────────────────────────────────────── */
+.apple-glass {
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  background: rgba(18, 18, 18, 0.72);
+}
+
+/* ── LED Glow indicators ─────────────────────────────────────────── */
+.led-glow-active {
+  background: rgba(255, 221, 121, 0.2);
+  border-color: rgba(255, 221, 121, 0.5);
+  box-shadow: 0 0 10px rgba(255, 221, 121, 0.45);
+}
+
+.led-glow-idle {
+  background: rgba(198, 198, 200, 0.1);
+  border-color: rgba(198, 198, 200, 0.3);
+}
+
+.led-glow-error {
+  background: rgba(238, 125, 119, 0.2);
+  border-color: rgba(238, 125, 119, 0.5);
+  box-shadow: 0 0 10px rgba(238, 125, 119, 0.45);
+}

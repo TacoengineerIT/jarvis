@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom'
 
 const NAV_ITEMS = [
-  { to: '/',          icon: 'home',      label: 'Intelligence' },
-  { to: '/dashboard', icon: 'dashboard', label: 'Dashboard'    },
-  { to: '/academic',  icon: 'school',    label: 'Academic'     },
-  { to: '/system',    icon: 'settings',  label: 'System'       },
+  { to: '/',          icon: 'home',            label: 'Intelligence' },
+  { to: '/dashboard', icon: 'dashboard',        label: 'Dashboard'    },
+  { to: '/financial', icon: 'account_balance',  label: 'Financial'    },
+  { to: '/academic',  icon: 'school',           label: 'Academic'     },
+  { to: '/system',    icon: 'settings',         label: 'System'       },
 ]
 
 export default function NavigationDrawer() {

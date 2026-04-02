@@ -6,6 +6,7 @@ const DEFAULT_STATE = {
   jarvis_state: 'LISTENING',
   mood: '😐',
   mood_score: 5.0,
+  mood_trend: 'stable',
   user_input: '',
   response: '',
   timestamp: new Date().toISOString(),
@@ -106,6 +107,11 @@ export const getStateEmoji = (state) => {
 }
 
 export const getMoodEmoji = (mood) => mood && mood.length === 2 ? mood : '😐'
+
+export const getMoodColor = (mood) => {
+  const map = { '😊': 'text-tertiary', '😞': 'text-error', '😤': 'text-error' }
+  return map[mood] || 'text-on-surface-variant'
+}
 
 export const getStateLabel = (state) => {
   const map = {
