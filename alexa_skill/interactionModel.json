@@ -1,0 +1,123 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "jarvis",
+      "intents": [
+        {
+          "name": "AssistenzaJarvis",
+          "slots": [
+            {
+              "name": "query",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "chiedi {query}",
+            "{query}",
+            "domanda {query}",
+            "dimmi {query}",
+            "parlami di {query}",
+            "rispondi {query}",
+            "cerca {query}",
+            "fammi sapere {query}",
+            "ho bisogno di sapere {query}",
+            "potresti dirmi {query}",
+            "sai {query}",
+            "cosa sai di {query}",
+            "aiutami con {query}",
+            "apri {query}",
+            "avvia {query}",
+            "lancia {query}"
+          ]
+        },
+        {
+          "name": "StatoSistemaIntent",
+          "slots": [],
+          "samples": [
+            "stato del sistema",
+            "come stai",
+            "stato sistema",
+            "dammi un report",
+            "come va",
+            "situazione generale",
+            "briefing",
+            "aggiornamento",
+            "tutto bene"
+          ]
+        },
+        {
+          "name": "LifeManagementIntent",
+          "slots": [
+            {
+              "name": "action",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "gestisci {action}",
+            "organizza {action}",
+            "situazione affitto",
+            "report finanziario",
+            "come sto con l'affitto",
+            "quanto manca per l'affitto",
+            "aggiungi entrata {action}",
+            "segna {action}",
+            "finanze {action}"
+          ]
+        },
+        {
+          "name": "EmotionalSupportIntent",
+          "slots": [],
+          "samples": [
+            "ho bisogno di supporto",
+            "sono stanco",
+            "sono giù",
+            "incoraggiami",
+            "motivami",
+            "sono scoraggiato",
+            "non ce la faccio",
+            "aiutami a stare meglio",
+            "ho bisogno di una parola",
+            "tirami su il morale"
+          ]
+        },
+        {
+          "name": "StudySessionIntent",
+          "slots": [
+            {
+              "name": "topic",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "spiegami {topic}",
+            "studiamo {topic}",
+            "ripasso {topic}",
+            "cos'è {topic}",
+            "definizione di {topic}",
+            "aiutami a studiare {topic}",
+            "interrogami su {topic}",
+            "riassumi {topic}",
+            "cosa significa {topic}"
+          ]
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        }
+      ]
+    }
+  }
+}
